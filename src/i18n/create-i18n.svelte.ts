@@ -1,5 +1,6 @@
 import { getContext, setContext } from 'svelte';
 import type { Cookies } from '@sveltejs/kit';
+import { isValidLanguageCode } from '../utils/language-search.js';
 
 import en from './locales/en.json' with { type: 'json' };
 import zh from './locales/zh.json' with { type: 'json' };
@@ -62,7 +63,7 @@ export function createI18nState(initialLocale?: string, cookies?: Cookies) {
 
 				let newPath: string;
 
-				if (currentLocaleInPath) {
+				if (isValidLanguageCode(pathParts[0])) {
 					// 替换现有的语言代码
 					pathParts[0] = newLocale;
 					newPath = '/' + pathParts.join('/');
