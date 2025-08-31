@@ -1,4 +1,8 @@
-<button class="connect">Connect</button>
+<script>
+	import { t } from '$lib/i18n/i18n.js';
+</script>
+
+<button class="connect">{t('connect')}</button>
 
 <style>
 	.connect {

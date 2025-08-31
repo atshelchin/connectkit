@@ -5,4 +5,7 @@
 <ConnectButton />
 
 <LangToggle />
-<a href="/demo">demo</a>
+
+<a href="/">home</a>
+
+demo

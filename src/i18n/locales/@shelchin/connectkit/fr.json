@@ -1,0 +1,11 @@
+{
+	"_meta": {
+		"name": "法语来",
+		"englishName": "France",
+		"direction": "ltr",
+		"flag": "🇬🇧",
+		"code": "fr"
+	},
+	"welcome": "发发 Welcome",
+	"connect": "发发 Connect"
+}

@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { setupI18n } from '../i18n/create-i18n.svelte.js';
 	import '../design-tokens.css';
 	import type { LayoutData } from './$types.js';
-	let { children } = $props<{ children: import('svelte').Snippet; data: LayoutData }>();
+	let { children, data } = $props<{ children: import('svelte').Snippet; data: LayoutData }>();
+	setupI18n(data.locale);
 </script>
 
 <div class="app">
