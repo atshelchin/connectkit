@@ -1,5 +1,5 @@
 {
-	"name": "connectkit",
+	"name": "@shelchin/connectkit",
 	"version": "0.0.1",
 	"scripts": {
 		"dev": "vite dev",
