@@ -1,4 +1,7 @@
-# Svelte library
+# connectkit
+
+这一个 Svelte 版本的以太坊钱包连接库。
+
 
 Everything you need to build a Svelte library, powered by [`sv`](https://npmjs.com/package/sv).
 
