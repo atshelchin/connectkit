@@ -42,6 +42,29 @@ npm run format       # Auto-format code with Prettier
 
 ## Architecture
 
+### File Naming Conventions
+
+- **Component files**: Use kebab-case (中横线命名) for all component files
+  - ✅ `connect-button.svelte`
+  - ✅ `theme-toggle.svelte`
+  - ✅ `modal.svelte`
+  - ❌ `ConnectButton.svelte`
+  - ❌ `ThemeToggle.svelte`
+- **Example files**: Use `component-name.examples.svelte` pattern
+  - ✅ `modal.examples.svelte`
+  - ✅ `theme-toggle.examples.svelte`
+  - ❌ `ModalExamples.svelte`
+
+### TypeScript Guidelines
+
+- **NEVER use `any` type**: Always use proper types or `unknown` if type is truly unknown
+  - ❌ `const data: any = fetchData()`
+  - ✅ `const data: unknown = fetchData()`
+  - ✅ `const data: UserData = fetchData()`
+- Use strict TypeScript mode (already enabled in tsconfig.json)
+- Prefer type inference where possible
+- Use explicit types for function parameters and return values
+
 ### Test Structure
 
 - **Unit Tests**: Vitest with two environments:

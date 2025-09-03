@@ -59,7 +59,7 @@ export function createI18nState(initialLocale?: string, cookies?: Cookies) {
 
 				// 提取当前路径中的语言代码（如果有）
 				const pathParts = currentPath.split('/').filter(Boolean);
-				const currentLocaleInPath = supportedLocales.includes(pathParts[0]) ? pathParts[0] : null;
+				// const currentLocaleInPath = supportedLocales.includes(pathParts[0]) ? pathParts[0] : null;
 
 				let newPath: string;
 

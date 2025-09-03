@@ -947,6 +947,9 @@ export function fuzzySearchLanguages(query: string): LanguageInfo[] {
  * Get language info by code
  */
 export function getLanguageInfo(code: string): LanguageInfo | undefined {
+	if (!code || typeof code !== 'string') {
+		return undefined;
+	}
 	return commonLanguages.find((lang) => lang.code.toLowerCase() === code.toLowerCase());
 }
 
@@ -961,5 +964,8 @@ export function getAllLanguages(): LanguageInfo[] {
  * Check if a language code is valid
  */
 export function isValidLanguageCode(code: string): boolean {
+	if (!code || typeof code !== 'string') {
+		return false;
+	}
 	return commonLanguages.some((lang) => lang.code.toLowerCase() === code.toLowerCase());
 }
