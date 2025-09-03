@@ -202,9 +202,9 @@
 		transition: all 150ms ease;
 	}
 
-	.btn:hover {
+	/* .btn:hover {
 		background: var(--color-muted);
-	}
+	} */
 
 	.btn:focus-visible {
 		outline: 2px solid var(--color-ring);
@@ -224,7 +224,7 @@
 	.btn-secondary {
 		background: var(--color-button-secondary);
 		color: var(--color-button-secondary-foreground);
-		border-color: var(--color-button-secondary);
+		border-color: var(--color-border);
 	}
 
 	.custom-content h4 {

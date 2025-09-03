@@ -284,8 +284,8 @@ html {
 	/* 按钮色 - 暗色主题 Button Colors - Dark Theme */
 	--color-button-primary: var(--brand-500);
 	--color-button-primary-foreground: var(--gray-300);
-	--color-button-secondary: var(--brand-900);
-	--color-button-secondary-foreground: var(--brand-800);
+	--color-button-secondary: var(--gray-800);
+	--color-button-secondary-foreground: var(--gray-300);
 	--color-button-disabled: var(--gray-700);
 	--color-button-disabled-foreground: var(--gray-400);
 
