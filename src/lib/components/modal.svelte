@@ -64,6 +64,11 @@
 		if (window.innerWidth > 640) return; // Only on mobile
 		startY = e.touches[0].clientY;
 		isDragging = true;
+
+		// Remove any existing transition for immediate response
+		if (dialog) {
+			dialog.style.transition = 'none';
+		}
 	}
 
 	function handleTouchMove(e: TouchEvent) {
@@ -74,15 +79,19 @@
 
 		// Only allow dragging down
 		if (deltaY > 0 && dialog) {
-			// Move the entire dialog element
-			dialog.style.transform = `translateY(${deltaY}px)`;
+			// Use transform3d for hardware acceleration
+			dialog.style.transform = `translate3d(0, ${deltaY}px, 0)`;
 
-			// Calculate opacity based on drag distance (max 300px for full transparency)
-			const maxDragDistance = 300;
-			const opacity = Math.max(0, 1 - deltaY / maxDragDistance);
+			// Calculate opacity based on drag distance (max 200px for full transparency)
+			const maxDragDistance = 200;
+			const opacity = Math.max(0.3, 1 - deltaY / maxDragDistance);
 
 			// Apply opacity to backdrop
 			dialog.style.setProperty('--backdrop-opacity', opacity.toString());
+		} else if (deltaY <= 0 && dialog) {
+			// Reset if trying to drag up
+			dialog.style.transform = 'translate3d(0, 0, 0)';
+			dialog.style.setProperty('--backdrop-opacity', '1');
 		}
 	}
 
@@ -93,12 +102,46 @@
 
 		// If dragged more than 100px, close the modal
 		if (deltaY > 100) {
-			handleClose();
+			// Animate out before closing
+			dialog.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+			dialog.style.transform = 'translateY(100%)';
+			dialog.style.opacity = '0';
+
+			setTimeout(() => {
+				handleClose();
+				// Reset styles for next open
+				dialog.style.transition = '';
+				dialog.style.transform = '';
+				dialog.style.opacity = '';
+			}, 200);
 		} else if (dialog) {
-			// Snap back to original position
-			dialog.style.transform = '';
-			// Reset backdrop opacity
-			dialog.style.setProperty('--backdrop-opacity', '1');
+			// Snap back to original position with animation
+			dialog.style.transition = 'transform 200ms ease-out';
+			dialog.style.transform = 'translateY(0)';
+
+			// Animate backdrop opacity back
+			const currentOpacity = dialog.style.getPropertyValue('--backdrop-opacity') || '1';
+			const startTime = performance.now();
+			const duration = 200;
+			const startOpacity = parseFloat(currentOpacity);
+
+			function animateOpacity(currentTime: number) {
+				const elapsed = currentTime - startTime;
+				const progress = Math.min(elapsed / duration, 1);
+				const opacity = startOpacity + (1 - startOpacity) * progress;
+				dialog.style.setProperty('--backdrop-opacity', opacity.toString());
+
+				if (progress < 1) {
+					requestAnimationFrame(animateOpacity);
+				}
+			}
+
+			requestAnimationFrame(animateOpacity);
+
+			// Reset transition after animation
+			setTimeout(() => {
+				dialog.style.transition = '';
+			}, 200);
 		}
 
 		isDragging = false;
@@ -357,8 +400,11 @@
 			max-height: 90vh; /* Slightly less than full height for visual breathing room */
 			border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 			animation: sheet-slide-up 300ms cubic-bezier(0.32, 0.72, 0, 1);
-			transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
-			will-change: transform;
+			will-change: transform, opacity;
+			/* Enable hardware acceleration */
+			transform: translate3d(0, 0, 0);
+			backface-visibility: hidden;
+			perspective: 1000px;
 		}
 
 		.modal::backdrop {
