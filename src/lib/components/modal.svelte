@@ -30,6 +30,7 @@
 	let startY = 0;
 	let currentY = 0;
 	let isDragging = false;
+	let savedScrollY = 0;
 
 	function handleClose() {
 		open = false;
@@ -149,21 +150,65 @@
 		currentY = 0;
 	}
 
-	$effect(() => {
-		if (dialog) {
-			if (open) {
-				dialog.showModal();
-				// Reset transform and backdrop when opening
-				dialog.style.transform = '';
-				dialog.style.setProperty('--backdrop-opacity', '1');
+	// Handle modal open/close - only on client side
+	function lockBodyScroll() {
+		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+			savedScrollY = window.scrollY;
 
-				// Prevent body scroll
-				document.body.style.overflow = 'hidden';
-			} else {
-				dialog.close();
-				// Restore body scroll
-				document.body.style.overflow = '';
+			// Add class and inline styles for maximum compatibility
+			document.body.classList.add('modal-open');
+			document.body.style.setProperty('--scroll-y', `-${savedScrollY}px`);
+
+			// Fallback: also apply inline styles directly
+			document.body.style.overflow = 'hidden';
+			document.body.style.position = 'fixed';
+			document.body.style.top = `-${savedScrollY}px`;
+			document.body.style.left = '0';
+			document.body.style.right = '0';
+			document.body.style.width = '100%';
+		}
+	}
+
+	function unlockBodyScroll() {
+		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+			document.body.classList.remove('modal-open');
+			document.body.style.removeProperty('--scroll-y');
+
+			// Remove all inline styles
+			document.body.style.overflow = '';
+			document.body.style.position = '';
+			document.body.style.top = '';
+			document.body.style.left = '';
+			document.body.style.right = '';
+			document.body.style.width = '';
+
+			if (savedScrollY) {
+				window.scrollTo(0, savedScrollY);
+				savedScrollY = 0;
 			}
+		}
+	}
+
+	// Watch for dialog state changes
+	$effect(() => {
+		// Only run on client
+		if (typeof window === 'undefined') return;
+
+		if (dialog && open) {
+			// Small delay to ensure dialog is ready
+			const timer = setTimeout(() => {
+				if (dialog && !dialog.open) {
+					dialog.showModal();
+					dialog.style.transform = '';
+					dialog.style.setProperty('--backdrop-opacity', '1');
+					lockBodyScroll();
+				}
+			}, 0);
+
+			return () => clearTimeout(timer);
+		} else if (dialog && !open && dialog.open) {
+			dialog.close();
+			unlockBodyScroll();
 		}
 	});
 
@@ -171,8 +216,7 @@
 		return () => {
 			if (dialog?.open) {
 				dialog.close();
-				// Ensure body scroll is restored when component unmounts
-				document.body.style.overflow = '';
+				unlockBodyScroll();
 			}
 		};
 	});
@@ -222,6 +266,16 @@
 </dialog>
 
 <style>
+	/* Global body scroll lock styles */
+	:global(body.modal-open) {
+		overflow: hidden !important;
+		position: fixed !important;
+		top: var(--scroll-y, 0) !important;
+		left: 0 !important;
+		right: 0 !important;
+		width: 100% !important;
+	}
+
 	.modal {
 		margin: auto;
 		padding: 0;
