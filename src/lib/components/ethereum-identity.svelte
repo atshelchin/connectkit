@@ -237,6 +237,7 @@
 <style>
 	.ethereum-identity {
 		display: inline-block;
+		width: 100%;
 	}
 
 	.identity-container {

@@ -7,3 +7,7 @@ export { default as AddressDisplay } from './address-display.svelte';
 export { default as EthereumIdentity } from './ethereum-identity.svelte';
 export { default as ChainIcon } from './chain-icon.svelte';
 export { default as WalletList } from './wallet-list.svelte';
+export { default as WalletConnecting } from './wallet-connecting.svelte';
+export { default as ConnectedButton } from './connected-button.svelte';
+export { default as AccountModal } from './account-modal.svelte';
+export { default as NetworkSelector } from './network-selector.svelte';

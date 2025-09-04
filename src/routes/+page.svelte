@@ -1,13 +1,12 @@
 <script lang="ts">
 	import { LangToggle, ThemeToggle } from '$lib/components/index.js';
 	import ModalExamples from '$lib/components/modal.examples.svelte';
-	import ThemeToggleExamples from '$lib/components/theme-toggle.examples.svelte';
-	import ConnectButtonExamples from '$lib/components/connect-button.examples.svelte';
 	import AvatarExamples from '$lib/components/avatar.examples.svelte';
 	import AddressDisplayExamples from '$lib/components/address-display.examples.svelte';
 	import EthereumIdentityExamples from '$lib/components/ethereum-identity.examples.svelte';
 	import ChainIconExamples from '$lib/components/chain-icon.examples.svelte';
 	import WalletListExamples from '$lib/components/wallet-list.examples.svelte';
+	import ConnectedButtonExamples from '$lib/components/connected-button.examples.svelte';
 </script>
 
 <div class="container">
@@ -16,19 +15,8 @@
 		<div class="header-actions">
 			<ThemeToggle />
 			<LangToggle />
-			<a href="/demo" class="link">View Demo →</a>
 		</div>
 	</header>
-
-	<section class="component-section">
-		<h2>Theme Toggle</h2>
-		<ThemeToggleExamples />
-	</section>
-
-	<section class="component-section">
-		<h2>Connect Button</h2>
-		<ConnectButtonExamples />
-	</section>
 
 	<section class="component-section">
 		<h2>Modal Component</h2>
@@ -57,6 +45,11 @@
 	<section class="component-section">
 		<h2>Wallet List</h2>
 		<WalletListExamples />
+	</section>
+
+	<section class="component-section">
+		<h2>Connected Button & Account Modal</h2>
+		<ConnectedButtonExamples />
 	</section>
 </div>
 

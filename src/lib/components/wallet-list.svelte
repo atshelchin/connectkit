@@ -123,9 +123,7 @@
 	<!-- Other Wallet Options -->
 	{#if showCoinbaseWallet || showWalletConnect}
 		<div class="wallet-section">
-			{#if discoveredWallets.length === 0 && !isDiscovering}
-				<h3 class="section-title">Connect Wallet</h3>
-			{:else}
+			{#if discoveredWallets.length === 0 && !isDiscovering}{:else}
 				<h3 class="section-title">More Options</h3>
 			{/if}
 
