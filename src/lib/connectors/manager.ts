@@ -4,6 +4,7 @@ import type {
 	Connector,
 	PersistedConnection
 } from './types.js';
+import type { Address } from 'viem';
 
 const STORAGE_KEY = 'connectkit.connection';
 const CONNECTION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
@@ -34,11 +35,12 @@ export class WalletConnectionManager implements ConnectionManager {
 		this.connectors.set(connector.id, connector);
 
 		// 设置连接器事件监听
-		connector.on('connect', ({ address, chainId }) => {
+		connector.on('connect', ({ address, addresses, chainId }) => {
 			this.updateState({
 				isConnected: true,
 				isConnecting: false,
 				address,
+				addresses: addresses || [address],
 				chainId,
 				connector,
 				error: undefined
@@ -52,6 +54,7 @@ export class WalletConnectionManager implements ConnectionManager {
 					isConnected: false,
 					isConnecting: false,
 					address: undefined,
+					addresses: undefined,
 					chainId: undefined,
 					connector: undefined,
 					error: undefined
@@ -61,7 +64,9 @@ export class WalletConnectionManager implements ConnectionManager {
 		});
 
 		connector.on('chainChanged', (chainId) => {
+			console.log('[Manager] Received chainChanged event from connector:', chainId);
 			if (this.state.connector === connector) {
+				console.log('[Manager] Updating state with new chainId:', chainId);
 				this.updateState({
 					...this.state,
 					chainId
@@ -75,7 +80,8 @@ export class WalletConnectionManager implements ConnectionManager {
 				if (accounts.length > 0) {
 					this.updateState({
 						...this.state,
-						address: accounts[0]
+						address: accounts[0],
+						addresses: accounts
 					});
 					this.persistConnection();
 				} else {
@@ -133,6 +139,7 @@ export class WalletConnectionManager implements ConnectionManager {
 				isConnected: true,
 				isConnecting: false,
 				address: result.address,
+				addresses: result.addresses || [result.address],
 				chainId: result.chainId,
 				connector,
 				error: undefined
@@ -212,6 +219,220 @@ export class WalletConnectionManager implements ConnectionManager {
 			this.clearPersistedConnection();
 			return false;
 		}
+	}
+
+	/**
+	 * 切换账户
+	 */
+	async switchAccount(address: Address): Promise<void> {
+		if (!this.state.connector) {
+			throw new Error('No connector connected');
+		}
+
+		if (!this.state.connector.switchAccount) {
+			throw new Error('Connector does not support account switching');
+		}
+
+		await this.state.connector.switchAccount(address);
+
+		// Update state
+		this.updateState({
+			...this.state,
+			address
+		});
+
+		this.persistConnection();
+	}
+
+	/**
+	 * 切换网络
+	 */
+	async switchChain(chainId: number): Promise<void> {
+		console.log('[Manager] switchChain called with chainId:', chainId);
+
+		if (!this.state.connector) {
+			throw new Error('No connector connected');
+		}
+
+		if (!this.state.connector.switchChain) {
+			throw new Error('Connector does not support chain switching');
+		}
+
+		try {
+			console.log('[Manager] Attempting to switch chain via connector...');
+			// Try to switch to the chain
+			await this.state.connector.switchChain(chainId);
+			console.log('[Manager] Chain switch successful to chainId:', chainId);
+		} catch (error: unknown) {
+			console.log('[Manager] Chain switch failed with error:', error);
+			// Check if it's a chain not added error
+			const err = error as { code?: number; message?: string };
+			if (err.code === 4902 || err.message?.includes('Unrecognized chain')) {
+				console.log('[Manager] Chain not found, attempting to add chain first...');
+				// Chain doesn't exist, try to add it first
+				await this.addChain(chainId);
+				console.log('[Manager] Chain added, retrying switch...');
+				// Try switching again
+				await this.state.connector.switchChain!(chainId);
+				console.log('[Manager] Chain switch successful after adding chain');
+			} else {
+				console.error('[Manager] Chain switch failed with unexpected error:', error);
+				throw error;
+			}
+		}
+	}
+
+	/**
+	 * Add a new chain to the wallet
+	 */
+	private async addChain(chainId: number): Promise<void> {
+		if (!this.state.connector) {
+			throw new Error('No connector connected');
+		}
+
+		// Get chain configuration
+		const chainConfig = this.getChainConfig(chainId);
+		if (!chainConfig) {
+			throw new Error(`Unknown chain ID: ${chainId}`);
+		}
+
+		// Get wallet client to add chain
+		const walletClient = await this.state.connector.getWalletClient();
+
+		await walletClient.request({
+			method: 'wallet_addEthereumChain',
+			params: [chainConfig]
+		});
+	}
+
+	/**
+	 * Get chain configuration for adding to wallet
+	 */
+	private getChainConfig(chainId: number):
+		| {
+				chainId: string;
+				chainName: string;
+				nativeCurrency: {
+					name: string;
+					symbol: string;
+					decimals: number;
+				};
+				rpcUrls: string[];
+				blockExplorerUrls?: string[];
+		  }
+		| undefined {
+		// Chain configurations
+		const configs: Record<
+			number,
+			{
+				chainId: string;
+				chainName: string;
+				nativeCurrency: {
+					name: string;
+					symbol: string;
+					decimals: number;
+				};
+				rpcUrls: string[];
+				blockExplorerUrls?: string[];
+			}
+		> = {
+			1: {
+				chainId: '0x1',
+				chainName: 'Ethereum Mainnet',
+				nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+				rpcUrls: ['https://eth.llamarpc.com'],
+				blockExplorerUrls: ['https://etherscan.io']
+			},
+			137: {
+				chainId: '0x89',
+				chainName: 'Polygon',
+				nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+				rpcUrls: ['https://polygon-rpc.com'],
+				blockExplorerUrls: ['https://polygonscan.com']
+			},
+			10: {
+				chainId: '0xa',
+				chainName: 'Optimism',
+				nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+				rpcUrls: ['https://mainnet.optimism.io'],
+				blockExplorerUrls: ['https://optimistic.etherscan.io']
+			},
+			42161: {
+				chainId: '0xa4b1',
+				chainName: 'Arbitrum One',
+				nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+				rpcUrls: ['https://arb1.arbitrum.io/rpc'],
+				blockExplorerUrls: ['https://arbiscan.io']
+			},
+			8453: {
+				chainId: '0x2105',
+				chainName: 'Base',
+				nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+				rpcUrls: ['https://mainnet.base.org'],
+				blockExplorerUrls: ['https://basescan.org']
+			}
+		};
+
+		return configs[chainId];
+	}
+
+	/**
+	 * 签名消息
+	 */
+	async signMessage(message: string): Promise<string> {
+		if (!this.state.connector) {
+			throw new Error('No connector connected');
+		}
+
+		if (!this.state.connector.signMessage) {
+			// Fallback to wallet client
+			const walletClient = await this.state.connector.getWalletClient();
+			const signature = await walletClient.signMessage({
+				account: this.state.address!,
+				message
+			});
+			return signature;
+		}
+
+		return await this.state.connector.signMessage(message);
+	}
+
+	/**
+	 * 签名 EIP-712 结构化消息
+	 */
+	async signTypedData(params: {
+		domain: {
+			name?: string;
+			version?: string;
+			chainId?: number;
+			verifyingContract?: Address;
+			salt?: string;
+		};
+		types: Record<string, Array<{ name: string; type: string }>>;
+		primaryType: string;
+		message: Record<string, unknown>;
+	}): Promise<string> {
+		if (!this.state.connector) {
+			throw new Error('No connector connected');
+		}
+
+		if (!this.state.connector.signTypedData) {
+			// Fallback to wallet client
+			const walletClient = await this.state.connector.getWalletClient();
+			const signature = await walletClient.signTypedData({
+				account: this.state.address!,
+				domain: {
+					...params.domain,
+					salt: params.domain.salt as `0x${string}` | undefined
+				},
+				types: params.types,
+				primaryType: params.primaryType,
+				message: params.message
+			});
+			return signature;
+		}
+
+		return await this.state.connector.signTypedData(params);
 	}
 
 	/**
@@ -333,25 +554,6 @@ export class WalletConnectionManager implements ConnectionManager {
 		} catch (error) {
 			console.warn('Failed to clear persisted connection:', error);
 		}
-	}
-
-	/**
-	 * 切换链
-	 */
-	async switchChain(chainId: number): Promise<void> {
-		if (!this.state.connector?.switchChain) {
-			throw new Error('Current connector does not support chain switching');
-		}
-
-		await this.state.connector.switchChain(chainId);
-
-		// 更新状态
-		this.updateState({
-			...this.state,
-			chainId
-		});
-
-		this.persistConnection();
 	}
 
 	/**

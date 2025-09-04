@@ -30,6 +30,7 @@ export interface ConnectionState {
 	isConnected: boolean;
 	isConnecting: boolean;
 	address?: Address;
+	addresses?: Address[]; // Multiple addresses support
 	chainId?: number;
 	connector?: Connector;
 	error?: Error;
@@ -53,10 +54,24 @@ export interface PersistedConnection {
 }
 
 /**
+ * SIWE Session
+ */
+export interface SIWESession {
+	address: Address;
+	chainId: number;
+	signature: string;
+	message: string;
+	nonce: string;
+	issuedAt: string;
+	expirationTime: string;
+	domain: string;
+}
+
+/**
  * 连接器事件
  */
 export interface ConnectorEvents {
-	connect: (args: { address: Address; chainId: number }) => void;
+	connect: (args: { address: Address; addresses?: Address[]; chainId: number }) => void;
 	disconnect: () => void;
 	chainChanged: (chainId: number) => void;
 	accountsChanged: (accounts: Address[]) => void;
@@ -81,6 +96,7 @@ export interface Connector {
 	 */
 	connect(chainId?: number): Promise<{
 		address: Address;
+		addresses?: Address[]; // All available addresses
 		chainId: number;
 	}>;
 
@@ -93,6 +109,16 @@ export interface Connector {
 	 * 获取账户地址
 	 */
 	getAccount(): Promise<Address>;
+
+	/**
+	 * 获取所有可用账户地址
+	 */
+	getAccounts?(): Promise<Address[]>;
+
+	/**
+	 * 切换账户
+	 */
+	switchAccount?(address: Address): Promise<void>;
 
 	/**
 	 * 获取链ID
@@ -108,6 +134,36 @@ export interface Connector {
 	 * 切换链
 	 */
 	switchChain?(chainId: number): Promise<void>;
+
+	/**
+	 * 签名消息
+	 */
+	signMessage?(message: string): Promise<string>;
+
+	/**
+	 * 签名 EIP-712 结构化消息
+	 */
+	signTypedData?(params: {
+		domain: {
+			name?: string;
+			version?: string;
+			chainId?: number;
+			verifyingContract?: Address;
+			salt?: string;
+		};
+		types: Record<string, Array<{ name: string; type: string }>>;
+		primaryType: string;
+		message: Record<string, unknown>;
+	}): Promise<string>;
+
+	/**
+	 * SIWE 认证
+	 */
+	signInWithEthereum?(params: {
+		domain: string;
+		nonce: string;
+		expirationTime?: string;
+	}): Promise<SIWESession>;
 
 	/**
 	 * 监听事件

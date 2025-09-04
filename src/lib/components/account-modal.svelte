@@ -2,15 +2,26 @@
 	import Modal from './modal.svelte';
 	import EthereumIdentity from './ethereum-identity.svelte';
 	import NetworkSelector from './network-selector.svelte';
-
+	import {
+		hasValidSIWESession,
+		generateNonce,
+		createSIWEMessage,
+		storeSIWESession,
+		clearSIWESession
+	} from '../utils/siwe.js';
+	import type { SIWESession } from '../connectors/types.js';
+	import AddressDisplay from './address-display.svelte';
 	interface Props {
 		open: boolean;
 		onClose: () => void;
 		address: string;
+		addresses?: string[];
 		balance?: string;
 		chainId?: number;
 		onDisconnect?: () => void;
 		onChainSwitch?: (chainId: number) => void;
+		onAccountSwitch?: (address: string) => void;
+		onSignMessage?: (message: string) => Promise<string>;
 		mainnet?: boolean;
 	}
 
@@ -18,12 +29,91 @@
 		open = false,
 		onClose,
 		address,
+		addresses = [],
 		balance = '0.0',
 		chainId = 1,
 		onDisconnect,
 		onChainSwitch,
+		onAccountSwitch,
+		onSignMessage,
 		mainnet = false
 	}: Props = $props();
+
+	let isSignedIn = $state(false);
+	let signingIn = $state(false);
+	let showAccountSelector = $state(false);
+	let copied = $state(false);
+
+	// Check SIWE session on mount and when address changes
+	$effect(() => {
+		if (address) {
+			isSignedIn = hasValidSIWESession(address);
+		}
+	});
+
+	// Handle SIWE sign in
+	async function handleSignIn() {
+		if (!onSignMessage || !address || !chainId) return;
+
+		signingIn = true;
+		try {
+			const nonce = generateNonce();
+			const domain = window.location.host;
+			const expirationTime = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
+
+			const message = createSIWEMessage({
+				address,
+				chainId,
+				domain,
+				nonce,
+				statement: 'Sign in with Ethereum to ConnectKit',
+				expirationTime
+			});
+
+			const signature = await onSignMessage(message);
+
+			const session: SIWESession = {
+				address,
+				chainId,
+				signature,
+				message,
+				nonce,
+				domain,
+				issuedAt: new Date().toISOString(),
+				expirationTime
+			};
+
+			storeSIWESession(session);
+			isSignedIn = true;
+		} catch (error) {
+			console.error('Failed to sign in:', error);
+		} finally {
+			signingIn = false;
+		}
+	}
+
+	// Handle copy address
+	async function handleCopy() {
+		if (!address || !navigator.clipboard) return;
+
+		try {
+			await navigator.clipboard.writeText(address);
+			copied = true;
+			setTimeout(() => {
+				copied = false;
+			}, 2000);
+		} catch (err) {
+			console.error('Failed to copy address:', err);
+		}
+	}
+
+	// Handle account switch
+	async function handleAccountSelect(newAddress: string) {
+		if (onAccountSwitch) {
+			await onAccountSwitch(newAddress);
+			showAccountSelector = false;
+		}
+	}
 </script>
 
 <Modal {open} {onClose}>
@@ -48,18 +138,156 @@
 
 		<!-- Account info section -->
 		<div class="account-section">
-			<!-- Avatar with chain badge -->
+			<!-- Simplified layout with avatar and selectors -->
 			<div class="identity-wrapper">
-				<EthereumIdentity
-					{address}
-					{mainnet}
-					showAvatar={true}
-					showAddress={true}
-					avatarSize="lg"
-					showCopy={false}
-				/>
-				<!-- Network selector component -->
-				<NetworkSelector {chainId} {onChainSwitch} />
+				<!-- Just show avatar, no address since it's in the dropdown -->
+				<div class="avatar-container">
+					<EthereumIdentity
+						{address}
+						{mainnet}
+						showAvatar={true}
+						showAddress={false}
+						avatarSize="lg"
+						showCopy={false}
+					/>
+				</div>
+
+				<div class="selectors-container">
+					<!-- Account selector with copy button -->
+					<div class="account-row">
+						<div class="account-selector-container">
+							<button
+								class="account-selector-trigger"
+								onclick={() => (showAccountSelector = !showAccountSelector)}
+								disabled={!addresses || addresses.length <= 1}
+							>
+								<AddressDisplay {address} showCopyIcon={false} />
+
+								{#if addresses && addresses.length > 1}
+									<svg
+										class="selector-chevron"
+										class:rotate={showAccountSelector}
+										width="12"
+										height="12"
+										viewBox="0 0 12 12"
+										fill="none"
+									>
+										<path
+											d="M3 5L6 8L9 5"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+										/>
+									</svg>
+								{/if}
+							</button>
+
+							{#if showAccountSelector && addresses && addresses.length > 1}
+								<div class="account-dropdown">
+									{#each addresses as addr (addr)}
+										<button
+											class="account-option"
+											class:selected={addr === address}
+											onclick={() => handleAccountSelect(addr)}
+										>
+											<EthereumIdentity
+												address={addr}
+												{mainnet}
+												showAvatar={true}
+												showAddress={true}
+												avatarSize="sm"
+												showCopy={false}
+											/>
+											{#if addr === address}
+												<svg
+													class="check-icon"
+													width="16"
+													height="16"
+													viewBox="0 0 16 16"
+													fill="var(--color-primary)"
+												>
+													<path d="M6 11L3 8L4.5 6.5L6 8L11.5 2.5L13 4L6 11Z" fill="currentColor" />
+												</svg>
+											{/if}
+										</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+
+						<!-- Copy address button -->
+						<button
+							class="copy-button"
+							class:copied
+							onclick={handleCopy}
+							title={copied ? '已复制' : '复制地址'}
+						>
+							{#if !copied}
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+									<rect x="5.5" y="5.5" width="8" height="8" rx="1" stroke="currentColor" />
+									<path
+										d="M3.5 10.5V3.5C3.5 2.94772 3.94772 2.5 4.5 2.5H11.5"
+										stroke="currentColor"
+									/>
+								</svg>
+							{:else}
+								<svg
+									class="check-icon-copy"
+									width="16"
+									height="16"
+									viewBox="0 0 16 16"
+									fill="currentColor"
+								>
+									<path d="M6 11L3 8L4.5 6.5L6 8L11.5 2.5L13 4L6 11Z" />
+								</svg>
+							{/if}
+						</button>
+					</div>
+
+					<div class="network-siwe-row">
+						<!-- Network selector component -->
+						<NetworkSelector {chainId} {onChainSwitch} />
+						<!-- SIWE Status -->
+						<div class="siwe-section">
+							{#if isSignedIn}
+								<div class="siwe-status signed-in">
+									<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+										<circle cx="8" cy="8" r="7" stroke="var(--color-success)" stroke-width="1.5" />
+										<path
+											d="M5 8L7 10L11 6"
+											stroke="var(--color-success)"
+											stroke-width="1.5"
+											stroke-linecap="round"
+										/>
+									</svg>
+									<span>已通过 SIWE 认证</span>
+									<!-- <button class="sign-out-btn" onclick={handleSignOut} title="登出">
+										<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+											<path
+												d="M10 4L14 8M14 8L10 12M14 8H6M6 2H4C3.44772 2 2 3.44772 2 4V12C2 13.1046 2.89543 14 4 14H6"
+												stroke="currentColor"
+												stroke-width="1.5"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											/>
+										</svg>
+									</button> -->
+								</div>
+							{:else}
+								<div class="siwe-status">
+									<span>未认证</span>
+									<button
+										class="sign-in-btn"
+										onclick={handleSignIn}
+										disabled={signingIn || !onSignMessage}
+									>
+										{signingIn ? '认证中...' : 'Sign-In with Ethereum'}
+									</button>
+								</div>
+							{/if}
+						</div>
+					</div>
+				</div>
 			</div>
 
 			<!-- Balance display -->
@@ -74,6 +302,10 @@
 			<button
 				class="disconnect-button"
 				onclick={() => {
+					// Clear SIWE session when disconnecting
+					if (address) {
+						clearSIWESession(address);
+					}
 					onDisconnect?.();
 					onClose();
 				}}
@@ -124,6 +356,18 @@
 		animation: pulse 2s ease-in-out infinite;
 	}
 
+	@keyframes check-bounce {
+		0% {
+			transform: scale(0);
+		}
+		50% {
+			transform: scale(1.2);
+		}
+		100% {
+			transform: scale(1);
+		}
+	}
+
 	@keyframes pulse {
 		0%,
 		100% {
@@ -166,10 +410,65 @@
 
 	.identity-wrapper {
 		display: flex;
-		flex-direction: row;
-		align-items: center;
-		gap: var(--space-3);
+		align-items: flex-start;
+		gap: var(--space-4);
 		width: 100%;
+	}
+
+	.avatar-container {
+		flex-shrink: 0;
+	}
+
+	.selectors-container {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.account-row {
+		display: flex;
+		gap: var(--space-2);
+		align-items: stretch;
+	}
+
+	.account-row .account-selector-container {
+		flex: 1;
+	}
+
+	.copy-button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: var(--space-2);
+		background: var(--color-panel-1);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		color: var(--color-muted-foreground);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.copy-button:hover:not(.copied) {
+		background: var(--color-muted);
+		border-color: var(--color-border-hover);
+		color: var(--color-foreground);
+	}
+
+	.copy-button:active:not(.copied) {
+		transform: scale(0.95);
+	}
+
+	.copy-button.copied {
+		color: var(--color-success, #10b981);
+	}
+
+	.copy-button svg {
+		transition: all 150ms ease;
+	}
+
+	.copy-button .check-icon-copy {
+		animation: check-bounce 300ms ease;
 	}
 
 	.balance-section {
@@ -192,6 +491,169 @@
 		font-size: var(--text-lg);
 		font-weight: var(--font-semibold);
 		color: var(--color-foreground);
+	}
+
+	.account-selector-container {
+		position: relative;
+	}
+
+	.account-selector-trigger {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
+		background: var(--color-panel-1);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		font-size: var(--text-sm);
+		color: var(--color-foreground);
+		cursor: pointer;
+		transition: all 150ms ease;
+		width: 100%;
+	}
+
+	.account-selector-trigger:hover:not(:disabled) {
+		background: var(--color-muted);
+		border-color: var(--color-border-hover);
+	}
+
+	.account-selector-trigger:disabled {
+		cursor: default;
+		opacity: 1;
+	}
+
+	.selector-label {
+		color: var(--color-muted-foreground);
+		font-size: var(--text-xs);
+	}
+
+	.selector-value {
+		font-weight: var(--font-medium);
+	}
+
+	.selector-chevron {
+		transition: transform 150ms ease;
+	}
+
+	.selector-chevron.rotate {
+		transform: rotate(180deg);
+	}
+
+	.account-dropdown {
+		position: absolute;
+		top: calc(100% + var(--space-1));
+		left: 0;
+		right: 0;
+		background: var(--color-background);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		box-shadow: var(--shadow-lg);
+		z-index: 50;
+		max-height: 300px;
+		overflow-y: auto;
+	}
+
+	.account-option {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		padding: var(--space-3);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		transition: all 150ms ease;
+		text-align: left;
+	}
+
+	.account-option:hover {
+		background: var(--color-muted);
+	}
+
+	.account-option.selected {
+		background: var(--color-panel-1);
+	}
+
+	.check-icon {
+		margin-left: auto;
+		flex-shrink: 0;
+		color: var(--color-primary, #3b82f6);
+	}
+
+	.network-siwe-row {
+		display: flex;
+		gap: var(--space-2);
+		align-items: stretch;
+	}
+
+	.network-siwe-row > :global(.network-selector) {
+		flex-shrink: 0;
+	}
+
+	.siwe-section {
+		flex: 1;
+		padding: var(--space-3);
+		background: var(--color-panel-1);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		display: flex;
+		align-items: center;
+	}
+
+	.siwe-status {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		font-size: var(--text-sm);
+		width: 100%;
+	}
+
+	.siwe-status.signed-in {
+		color: var(--color-success);
+	}
+
+	.sign-in-btn {
+		margin-left: auto;
+		padding: var(--space-1) var(--space-3);
+		background: var(--color-primary);
+		color: var(--color-primary-foreground);
+		border: none;
+		border-radius: var(--radius);
+		font-size: var(--text-sm);
+		font-weight: var(--font-medium);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.sign-out-btn {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		padding: 0;
+		background: transparent;
+		color: var(--color-muted-foreground);
+		border: none;
+		border-radius: var(--radius);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.sign-in-btn:hover:not(:disabled) {
+		opacity: 0.9;
+		transform: translateY(-1px);
+	}
+
+	.sign-out-btn:hover {
+		background: var(--color-muted);
+		color: var(--color-destructive, #dc2626);
+	}
+
+	.sign-in-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	.actions-section {

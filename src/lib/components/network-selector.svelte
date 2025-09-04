@@ -87,7 +87,15 @@
 
 	// Handle network selection
 	function selectNetwork(networkChainId: number) {
-		onChainSwitch?.(networkChainId);
+		console.log('[NetworkSelector] User selected network with chainId:', networkChainId);
+		console.log('[NetworkSelector] Current chainId:', chainId);
+
+		if (networkChainId !== chainId) {
+			console.log('[NetworkSelector] Triggering chain switch...');
+			onChainSwitch?.(networkChainId);
+		} else {
+			console.log('[NetworkSelector] Already on selected chain, no switch needed');
+		}
 		showNetworkDropdown = false;
 	}
 
@@ -194,14 +202,14 @@
 		display: flex;
 		align-items: center;
 		gap: var(--space-1);
-		padding: var(--space-2);
-		background: var(--color-background);
-		border: 2px solid var(--color-border);
+		padding: var(--space-3);
+		background: var(--color-panel-1);
+		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		cursor: pointer;
 		transition: all 150ms ease;
 		min-width: 60px;
-		height: 36px;
+		height: auto;
 	}
 
 	.chain-badge:hover {

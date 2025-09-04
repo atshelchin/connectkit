@@ -45,6 +45,7 @@ export class EIP6963Connector extends BaseConnector {
 	 */
 	async connect(chainId?: number): Promise<{
 		address: Address;
+		addresses?: Address[];
 		chainId: number;
 	}> {
 		try {
@@ -72,11 +73,19 @@ export class EIP6963Connector extends BaseConnector {
 			const address = accounts[0];
 			const connectedChainId = chainId || currentChainId;
 
-			// 触发连接事件
-			this.emit('connect', { address, chainId: connectedChainId });
+			// 设置事件监听
+			this.setupEventListeners();
+
+			// 触发连接事件，包含所有地址
+			this.emit('connect', {
+				address,
+				addresses: accounts,
+				chainId: connectedChainId
+			});
 
 			return {
 				address,
+				addresses: accounts,
 				chainId: connectedChainId
 			};
 		} catch (error) {
@@ -122,6 +131,38 @@ export class EIP6963Connector extends BaseConnector {
 	}
 
 	/**
+	 * 获取所有账户
+	 */
+	async getAccounts(): Promise<Address[]> {
+		const accounts = (await this.provider.request({
+			method: 'eth_accounts'
+		})) as Address[];
+
+		return accounts || [];
+	}
+
+	/**
+	 * 切换账户（注：大多数钱包不支持程序化切换，这里只是更新本地状态）
+	 */
+	async switchAccount(address: Address): Promise<void> {
+		const accounts = await this.getAccounts();
+
+		// 检查地址是否在授权列表中
+		if (!accounts.includes(address)) {
+			throw new Error('Account not authorized');
+		}
+
+		// 触发账户变更事件
+		// 注：这只会更新本地状态，不会真正切换钱包中的活动账户
+		const chainId = await this.getChainId();
+		this.emit('connect', {
+			address,
+			addresses: accounts,
+			chainId
+		});
+	}
+
+	/**
 	 * 获取当前链ID
 	 */
 	async getChainId(): Promise<number> {
@@ -147,40 +188,47 @@ export class EIP6963Connector extends BaseConnector {
 	 * 切换链
 	 */
 	async switchChain(chainId: number): Promise<void> {
+		console.log('[EIP6963] switchChain called with chainId:', chainId);
 		const chain = this.getChain(chainId);
 		const hexChainId = `0x${chainId.toString(16)}`;
 
 		try {
+			console.log('[EIP6963] Requesting wallet to switch to chain:', hexChainId);
 			// 尝试切换到目标链
 			await this.provider.request({
 				method: 'wallet_switchEthereumChain',
 				params: [{ chainId: hexChainId }]
 			});
+			console.log('[EIP6963] Wallet successfully switched to chain:', chainId);
 
 			this.emit('chainChanged', chainId);
 		} catch (error) {
+			console.log('[EIP6963] Wallet switch failed:', error);
 			// 4902 表示链未添加到钱包
 			const err = error as { code?: number; message?: string };
 			if (err.code === 4902 && chain) {
+				console.log('[EIP6963] Chain not found in wallet (error 4902), requesting to add chain...');
 				try {
 					// 尝试添加链
+					const chainParams = {
+						chainId: hexChainId,
+						chainName: chain.name,
+						nativeCurrency: chain.nativeCurrency,
+						rpcUrls: chain.rpcUrls?.default?.http || [],
+						blockExplorerUrls: chain.blockExplorers?.default?.url
+							? [chain.blockExplorers.default.url]
+							: []
+					};
+					console.log('[EIP6963] Adding chain with params:', chainParams);
 					await this.provider.request({
 						method: 'wallet_addEthereumChain',
-						params: [
-							{
-								chainId: hexChainId,
-								chainName: chain.name,
-								nativeCurrency: chain.nativeCurrency,
-								rpcUrls: chain.rpcUrls?.default?.http || [],
-								blockExplorerUrls: chain.blockExplorers?.default?.url
-									? [chain.blockExplorers.default.url]
-									: []
-							}
-						]
+						params: [chainParams]
 					});
+					console.log('[EIP6963] Chain added successfully, wallet should have switched');
 
 					this.emit('chainChanged', chainId);
 				} catch (addError) {
+					console.error('[EIP6963] Failed to add chain:', addError);
 					const err = new Error(
 						addError instanceof Error ? addError.message : 'Failed to add chain'
 					);
@@ -188,6 +236,7 @@ export class EIP6963Connector extends BaseConnector {
 					throw err;
 				}
 			} else {
+				console.error('[EIP6963] Chain switch failed with non-4902 error:', error);
 				const err = new Error(error instanceof Error ? error.message : 'Failed to switch chain');
 				this.emit('error', err);
 				throw err;
@@ -213,8 +262,13 @@ export class EIP6963Connector extends BaseConnector {
 	/**
 	 * 设置事件监听
 	 */
+	private eventListenersSetup = false;
+
 	private setupEventListeners(): void {
 		if (!this.provider) return;
+
+		// 避免重复设置监听器
+		if (this.eventListenersSetup) return;
 
 		// 账户变更
 		this.provider.on('accountsChanged', (...args: unknown[]) => {
@@ -222,14 +276,29 @@ export class EIP6963Connector extends BaseConnector {
 			if (accounts.length === 0) {
 				this.emit('disconnect');
 			} else {
+				// 触发账户变更事件，包含所有账户
 				this.emit('accountsChanged', accounts);
+				// 同时更新连接状态
+				this.getChainId()
+					.then((chainId) => {
+						this.emit('connect', {
+							address: accounts[0],
+							addresses: accounts,
+							chainId
+						});
+					})
+					.catch(() => {
+						// 忽略错误
+					});
 			}
 		});
 
 		// 链变更
 		this.provider.on('chainChanged', (...args: unknown[]) => {
 			const chainId = args[0] as string | number;
+			console.log('[EIP6963] Wallet emitted chainChanged event:', chainId);
 			const normalizedChainId = this.normalizeChainId(chainId);
+			console.log('[EIP6963] Normalized chainId:', normalizedChainId);
 			this.emit('chainChanged', normalizedChainId);
 		});
 
@@ -237,6 +306,30 @@ export class EIP6963Connector extends BaseConnector {
 		this.provider.on('disconnect', () => {
 			this.emit('disconnect');
 		});
+
+		// 监听权限变化（某些钱包支持）
+		if ('on' in this.provider) {
+			const provider = this.provider as EIP1193Provider & {
+				on: (event: string, handler: () => void) => void;
+			};
+			// 尝试监听权限变化
+			if (typeof provider.on === 'function') {
+				provider.on('permissions_changed', () => {
+					// 重新获取账户信息
+					this.getAccounts()
+						.then((accounts) => {
+							if (accounts.length > 0) {
+								this.emit('accountsChanged', accounts);
+							}
+						})
+						.catch(() => {
+							// 忽略错误
+						});
+				});
+			}
+		}
+
+		this.eventListenersSetup = true;
 	}
 
 	/**

@@ -22,9 +22,9 @@
 	// Get size in pixels
 	const sizeMap = {
 		xs: 16,
-		sm: 20,
-		md: 24,
-		lg: 32,
+		sm: 28,
+		md: 32,
+		lg: 36,
 		xl: 40
 	};
 

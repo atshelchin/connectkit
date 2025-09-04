@@ -19,6 +19,7 @@ export interface WalletStore {
 	isConnected: Readable<boolean>;
 	isConnecting: Readable<boolean>;
 	address: Readable<string | undefined>;
+	addresses: Readable<string[] | undefined>;
 	chainId: Readable<number | undefined>;
 
 	// Available connectors
@@ -29,6 +30,8 @@ export interface WalletStore {
 	connect: (connector: Connector, chainId?: number) => Promise<void>;
 	disconnect: () => Promise<void>;
 	switchChain: (chainId: number) => Promise<void>;
+	switchAccount: (address: string) => Promise<void>;
+	signMessage: (message: string) => Promise<string>;
 	autoConnect: () => Promise<boolean>;
 	registerConnector: (connector: Connector) => void;
 }
@@ -83,6 +86,8 @@ export function initializeWalletStore(connectors: Connector[] = []): WalletStore
 
 	const address = derived(connectionState, ($state) => $state.address);
 
+	const addresses = derived(connectionState, ($state) => $state.addresses);
+
 	const chainId = derived(connectionState, ($state) => $state.chainId);
 
 	return {
@@ -91,6 +96,7 @@ export function initializeWalletStore(connectors: Connector[] = []): WalletStore
 		isConnected,
 		isConnecting,
 		address,
+		addresses,
 		chainId,
 
 		// Connectors
@@ -111,6 +117,16 @@ export function initializeWalletStore(connectors: Connector[] = []): WalletStore
 		switchChain: async (chainId: number) => {
 			if (!manager) throw new Error('Store not initialized');
 			await manager.switchChain(chainId);
+		},
+
+		switchAccount: async (address: string) => {
+			if (!manager) throw new Error('Store not initialized');
+			await manager.switchAccount(address as `0x${string}`);
+		},
+
+		signMessage: async (message: string) => {
+			if (!manager) throw new Error('Store not initialized');
+			return await manager.signMessage(message);
 		},
 
 		autoConnect: async () => {

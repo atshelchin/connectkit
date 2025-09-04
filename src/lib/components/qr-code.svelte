@@ -128,7 +128,6 @@
 		// Clear content and append new QR code
 		// eslint-disable-next-line svelte/no-dom-manipulating
 		qrCodeContainer.textContent = '';
-		// eslint-disable-next-line svelte/no-dom-manipulating
 		newQRCode.append(qrCodeContainer);
 		qrCodeInstance = newQRCode;
 	});

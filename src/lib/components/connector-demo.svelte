@@ -12,6 +12,7 @@
 	let isConnected = $state(false);
 	let isConnecting = $state(false);
 	let address = $state<string | undefined>(undefined);
+	let addresses = $state<string[] | undefined>(undefined);
 	let chainId = $state<number | undefined>(undefined);
 	let connectors = $state<Connector[]>([]);
 	interface EIP6963WalletInfo {
@@ -56,6 +57,7 @@
 			isConnected = state.isConnected;
 			isConnecting = state.isConnecting;
 			address = state.address;
+			addresses = state.addresses;
 			chainId = state.chainId;
 		});
 
@@ -270,10 +272,22 @@
 			open={showAccountModal}
 			onClose={() => (showAccountModal = false)}
 			address={address || ''}
+			{addresses}
 			balance="0.0"
 			{chainId}
 			onDisconnect={handleDisconnect}
 			onChainSwitch={handleChainSwitch}
+			onAccountSwitch={async (addr) => {
+				if (store) {
+					await store.switchAccount(addr);
+				}
+			}}
+			onSignMessage={async (message) => {
+				if (store) {
+					return await store.signMessage(message);
+				}
+				throw new Error('Store not initialized');
+			}}
 		/>
 	</div>
 
