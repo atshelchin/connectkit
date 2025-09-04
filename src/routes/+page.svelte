@@ -7,6 +7,7 @@
 	import AddressDisplayExamples from '$lib/components/address-display.examples.svelte';
 	import EthereumIdentityExamples from '$lib/components/ethereum-identity.examples.svelte';
 	import ChainIconExamples from '$lib/components/chain-icon.examples.svelte';
+	import WalletListExamples from '$lib/components/wallet-list.examples.svelte';
 </script>
 
 <div class="container">
@@ -51,6 +52,11 @@
 	<section class="component-section">
 		<h2>Chain Icon</h2>
 		<ChainIconExamples />
+	</section>
+
+	<section class="component-section">
+		<h2>Wallet List</h2>
+		<WalletListExamples />
 	</section>
 </div>
 

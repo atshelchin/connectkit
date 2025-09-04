@@ -6,3 +6,4 @@ export { default as Avatar } from './avatar.svelte';
 export { default as AddressDisplay } from './address-display.svelte';
 export { default as EthereumIdentity } from './ethereum-identity.svelte';
 export { default as ChainIcon } from './chain-icon.svelte';
+export { default as WalletList } from './wallet-list.svelte';
