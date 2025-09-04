@@ -2,6 +2,7 @@ import type { Address, WalletClient } from 'viem';
 import { EthereumProvider } from '@walletconnect/ethereum-provider';
 import { BaseConnector } from './base.js';
 import { ConnectorType, type WalletConnectConnectorOptions } from './types.js';
+import { isMobile, openWalletDeepLink } from '../utils/mobile.js';
 
 type WalletConnectProvider = InstanceType<typeof EthereumProvider>;
 
@@ -18,6 +19,7 @@ export class WalletConnectConnector extends BaseConnector {
 
 	private provider: WalletConnectProvider | null = null;
 	private uri?: string;
+	private selectedWalletId?: string;
 
 	constructor(private readonly wcOptions: WalletConnectConnectorOptions) {
 		super(wcOptions);
@@ -84,7 +86,14 @@ export class WalletConnectConnector extends BaseConnector {
 			this.provider.on('display_uri', (uri: string) => {
 				console.log('WalletConnect URI:', uri);
 				this.uri = uri;
+
+				// 总是发送 display_uri 事件以保持兼容性
 				this.emit('display_uri', uri);
+
+				// 在移动端额外发送 mobile_wallet_selection 事件
+				if (isMobile()) {
+					this.emit('mobile_wallet_selection', uri);
+				}
 			});
 
 			// 启用 provider（触发连接流程）
@@ -306,6 +315,30 @@ export class WalletConnectConnector extends BaseConnector {
 				this.isSwitchingChain = false;
 			}, 1000);
 		}
+	}
+
+	/**
+	 * 设置选中的钱包 ID（用于移动端深度链接）
+	 */
+	setSelectedWallet(walletId: string): void {
+		this.selectedWalletId = walletId;
+	}
+
+	/**
+	 * 在移动端打开钱包
+	 */
+	openMobileWallet(): void {
+		if (!this.uri) {
+			console.error('No WalletConnect URI available');
+			return;
+		}
+
+		if (!isMobile()) {
+			console.warn('openMobileWallet should only be called on mobile devices');
+			return;
+		}
+
+		openWalletDeepLink(this.uri, this.selectedWalletId);
 	}
 
 	/**

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import QRCode from './qr-code.svelte';
 	import WalletIcon from './wallet-icon.svelte';
+	import { isMobile, getRecommendedMobileWallets, openWalletDeepLink } from '../utils/mobile.js';
 
 	interface Props {
 		walletName: string;
@@ -29,10 +30,52 @@
 
 	let copyFeedback = $state(false);
 
-	// Display message based on mode
+	// Check if mobile device
+	const isMobileDevice = isMobile();
+	const mobileWallets = getRecommendedMobileWallets();
+
+	// Display modes: 'qr' or 'deeplink'
+	let displayMode = $state<'qr' | 'deeplink'>(isMobileDevice ? 'deeplink' : 'qr');
+
+	// Selected wallet for deep link (shows "go to wallet" message)
+	let selectedWallet = $state<string | null>(null);
+	let selectedWalletName = $state<string>('');
+
+	// Initialize showMobileWallets based on device and mode
+	let showMobileWallets = $state(isMobileDevice && mode === 'walletconnect');
+
+	// Display message based on mode and device
 	let displayMessage = $derived(
-		mode === 'walletconnect' ? 'Scan with Phone' : message || `正在打开 ${walletName}...`
+		mode === 'walletconnect'
+			? selectedWallet
+				? `正在连接 ${selectedWalletName}`
+				: displayMode === 'deeplink'
+					? '选择钱包连接'
+					: 'Scan with Phone'
+			: message || `正在打开 ${walletName}...`
 	);
+
+	// Handle mobile wallet selection
+	function selectMobileWallet(walletId: string, walletName: string) {
+		if (walletConnectUri) {
+			selectedWallet = walletId;
+			selectedWalletName = walletName;
+			openWalletDeepLink(walletConnectUri, walletId);
+
+			// Reset after a delay to allow user to try again
+			setTimeout(() => {
+				selectedWallet = null;
+				selectedWalletName = '';
+			}, 10000);
+		}
+	}
+
+	// Toggle between QR and Deep Link modes
+	function toggleMode() {
+		displayMode = displayMode === 'qr' ? 'deeplink' : 'qr';
+		selectedWallet = null;
+		selectedWalletName = '';
+	}
 
 	// Copy to clipboard
 	async function handleCopy() {
@@ -73,6 +116,11 @@
 	let containerRef: HTMLDivElement;
 	onMount(() => {
 		containerRef?.focus();
+
+		// On mobile with WalletConnect, show wallet selection by default
+		if (isMobileDevice && mode === 'walletconnect') {
+			showMobileWallets = true;
+		}
 	});
 </script>
 
@@ -94,7 +142,13 @@
 			<h3 id="wallet-connecting-title" class="connecting-title">{displayMessage}</h3>
 
 			{#if mode === 'walletconnect'}
-				<p class="connecting-subtitle">Use your phone camera or copy the link to connect</p>
+				{#if selectedWallet}
+					<p class="connecting-subtitle">请在钱包应用中确认连接</p>
+				{:else if displayMode === 'deeplink'}
+					<p class="connecting-subtitle">选择一个钱包应用来连接</p>
+				{:else}
+					<p class="connecting-subtitle">使用手机相机扫描或复制链接连接</p>
+				{/if}
 			{:else}
 				<p class="connecting-subtitle">请在弹出的窗口中确认连接</p>
 
@@ -109,53 +163,192 @@
 			{/if}
 		</div>
 
-		<!-- WalletConnect QR Code -->
+		<!-- WalletConnect Content -->
 		{#if mode === 'walletconnect'}
-			<div class="qr-container">
-				{#if walletConnectUri}
-					<div class="qr-wrapper">
-						<QRCode data={walletConnectUri} size={248} />
-					</div>
+			<!-- Mode Toggle Button -->
+			<div class="mode-toggle">
+				<button class="toggle-btn" onclick={toggleMode}>
+					{#if displayMode === 'qr'}
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+							<rect x="2" y="2" width="5" height="5" fill="currentColor" />
+							<rect x="9" y="2" width="5" height="5" fill="currentColor" />
+							<rect x="2" y="9" width="5" height="5" fill="currentColor" />
+							<rect x="9" y="9" width="5" height="5" fill="currentColor" />
+						</svg>
+						<span>切换到钱包列表</span>
+					{:else}
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+							<rect
+								x="1"
+								y="1"
+								width="14"
+								height="14"
+								rx="2"
+								stroke="currentColor"
+								stroke-width="2"
+							/>
+							<rect x="5" y="5" width="2" height="2" fill="currentColor" />
+							<rect x="9" y="5" width="2" height="2" fill="currentColor" />
+							<rect x="5" y="9" width="2" height="2" fill="currentColor" />
+							<rect x="9" y="9" width="2" height="2" fill="currentColor" />
+						</svg>
+						<span>切换到二维码</span>
+					{/if}
+				</button>
+			</div>
 
-					<!-- Copy Link Button -->
-					<button
-						class="copy-button"
-						class:copied={copyFeedback}
-						onclick={handleCopy}
-						aria-label={copyFeedback ? 'Link copied!' : 'Copy link'}
-					>
-						{#if copyFeedback}
-							<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-								<path
-									d="M13.5 4.5L6 12L2.5 8.5"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									fill="none"
+			{#if displayMode === 'deeplink'}
+				<!-- Deep Link Mode: Show wallet selection -->
+				{#if selectedWallet}
+					<!-- Selected wallet state -->
+					<div class="wallet-selected">
+						<div class="selected-icon">
+							{#if mobileWallets.find((w) => w.id === selectedWallet)?.icon}
+								<img
+									src={mobileWallets.find((w) => w.id === selectedWallet)?.icon}
+									alt={selectedWalletName}
+									width="64"
+									height="64"
 								/>
-							</svg>
-						{:else}
-							<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-								<rect x="5.5" y="5.5" width="8" height="8" rx="1" stroke="currentColor" />
-								<path
-									d="M3.5 10.5V3.5C3.5 2.94772 3.94772 2.5 4.5 2.5H11.5"
-									stroke="currentColor"
-								/>
-							</svg>
-						{/if}
-						<span>Copy Link</span>
-					</button>
-				{:else}
-					<!-- Loading state -->
-					<div class="qr-loading">
-						<div class="loading-spinner">
-							<div class="spinner-ring"></div>
+							{:else}
+								<WalletIcon name={selectedWalletName} size="xl" />
+							{/if}
 						</div>
-						<p class="loading-text">Initializing...</p>
+						<div class="selected-message">
+							<p>请前往 {selectedWalletName} 完成连接</p>
+							<p class="selected-hint">如果钱包未自动打开，请手动打开应用</p>
+						</div>
+						<button
+							class="retry-different"
+							onclick={() => {
+								selectedWallet = null;
+								selectedWalletName = '';
+							}}
+						>
+							选择其他钱包
+						</button>
+					</div>
+				{:else}
+					<div class="mobile-wallets">
+						<div class="wallet-grid">
+							{#each mobileWallets.slice(0, 6) as wallet (wallet.id)}
+								<button
+									class="wallet-item"
+									onclick={() => selectMobileWallet(wallet.id, wallet.name)}
+									aria-label="Connect with {wallet.name}"
+									disabled={!walletConnectUri}
+								>
+									<div class="wallet-item-icon">
+										<WalletIcon name={wallet.name} icon={wallet.icon} />
+									</div>
+									<span class="wallet-item-name">{wallet.name}</span>
+								</button>
+							{/each}
+						</div>
+
+						<!-- Show more wallets button -->
+						{#if mobileWallets.length > 6}
+							<button
+								class="show-more-button"
+								onclick={() => (showMobileWallets = !showMobileWallets)}
+							>
+								查看更多钱包
+							</button>
+						{/if}
+
+						<!-- Copy Link Option or Loading -->
+						{#if walletConnectUri}
+							<div class="mobile-copy-section">
+								<div class="divider">
+									<span>或</span>
+								</div>
+								<button
+									class="copy-button"
+									class:copied={copyFeedback}
+									onclick={handleCopy}
+									aria-label={copyFeedback ? 'Link copied!' : 'Copy link'}
+								>
+									{#if copyFeedback}
+										<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+											<path
+												d="M13.5 4.5L6 12L2.5 8.5"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												fill="none"
+											/>
+										</svg>
+									{:else}
+										<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+											<rect x="5.5" y="5.5" width="8" height="8" rx="1" stroke="currentColor" />
+											<path
+												d="M3.5 10.5V3.5C3.5 2.94772 3.94772 2.5 4.5 2.5H11.5"
+												stroke="currentColor"
+											/>
+										</svg>
+									{/if}
+									<span>复制连接链接</span>
+								</button>
+							</div>
+						{:else}
+							<div class="mobile-loading">
+								<div class="loading-spinner-small">
+									<div class="spinner-ring"></div>
+								</div>
+								<p class="loading-text">正在初始化连接...</p>
+							</div>
+						{/if}
 					</div>
 				{/if}
-			</div>
+			{:else}
+				<!-- QR Mode: Show QR Code -->
+				<div class="qr-container">
+					{#if walletConnectUri}
+						<div class="qr-wrapper">
+							<QRCode data={walletConnectUri} size={248} />
+						</div>
+
+						<!-- Copy Link Button -->
+						<button
+							class="copy-button"
+							class:copied={copyFeedback}
+							onclick={handleCopy}
+							aria-label={copyFeedback ? 'Link copied!' : 'Copy link'}
+						>
+							{#if copyFeedback}
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+									<path
+										d="M13.5 4.5L6 12L2.5 8.5"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										fill="none"
+									/>
+								</svg>
+							{:else}
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+									<rect x="5.5" y="5.5" width="8" height="8" rx="1" stroke="currentColor" />
+									<path
+										d="M3.5 10.5V3.5C3.5 2.94772 3.94772 2.5 4.5 2.5H11.5"
+										stroke="currentColor"
+									/>
+								</svg>
+							{/if}
+							<span>Copy Link</span>
+						</button>
+					{:else}
+						<!-- Loading state -->
+						<div class="qr-loading">
+							<div class="loading-spinner">
+								<div class="spinner-ring"></div>
+							</div>
+							<p class="loading-text">Initializing...</p>
+						</div>
+					{/if}
+				</div>
+			{/if}
 		{/if}
 
 		<!-- Error or Retry Message -->
@@ -248,6 +441,220 @@
 		margin: 0;
 	}
 
+	/* Mode Toggle */
+	.mode-toggle {
+		width: 100%;
+		display: flex;
+		justify-content: center;
+		margin-bottom: var(--space-4);
+	}
+
+	.toggle-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
+		background: transparent;
+		color: var(--color-primary);
+		border: 1px solid var(--color-primary);
+		border-radius: var(--radius);
+		font-size: var(--text-sm);
+		font-weight: var(--font-medium);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.toggle-btn:hover {
+		background: var(--color-primary);
+		color: var(--color-primary-foreground);
+	}
+
+	/* Selected Wallet State */
+	.wallet-selected {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-4);
+		padding: var(--space-6) 0;
+	}
+
+	.selected-icon {
+		width: 80px;
+		height: 80px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--color-panel-1);
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--color-border);
+	}
+
+	.selected-icon img {
+		border-radius: var(--radius);
+	}
+
+	.selected-message {
+		text-align: center;
+	}
+
+	.selected-message p {
+		margin: 0;
+		font-size: var(--text-base);
+		color: var(--color-foreground);
+		font-weight: var(--font-medium);
+	}
+
+	.selected-hint {
+		margin-top: var(--space-2) !important;
+		font-size: var(--text-sm) !important;
+		color: var(--color-muted-foreground) !important;
+		font-weight: var(--font-normal) !important;
+	}
+
+	.retry-different {
+		padding: var(--space-2) var(--space-4);
+		background: transparent;
+		color: var(--color-primary);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		font-size: var(--text-sm);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.retry-different:hover {
+		background: var(--color-muted);
+		border-color: var(--color-primary);
+	}
+
+	/* Mobile wallet selection */
+	.mobile-wallets {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.wallet-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--space-3);
+		width: 100%;
+	}
+
+	.wallet-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-2);
+		padding: var(--space-3);
+		background: var(--color-panel-1);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.wallet-item:hover:not(:disabled) {
+		background: var(--color-muted);
+		border-color: var(--color-border-hover);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+	}
+
+	.wallet-item:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.wallet-item-icon {
+		width: 48px;
+		height: 48px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.wallet-item-name {
+		font-size: var(--text-xs);
+		font-weight: var(--font-medium);
+		color: var(--color-foreground);
+		text-align: center;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		max-width: 100%;
+	}
+
+	.show-more-button {
+		width: 100%;
+		padding: var(--space-3);
+		background: transparent;
+		color: var(--color-primary);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		font-size: var(--text-sm);
+		font-weight: var(--font-medium);
+		cursor: pointer;
+		transition: all 150ms ease;
+	}
+
+	.show-more-button:hover {
+		background: var(--color-muted);
+		border-color: var(--color-primary);
+	}
+
+	.mobile-loading {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-4) 0;
+	}
+
+	.loading-spinner-small {
+		width: 32px;
+		height: 32px;
+		position: relative;
+	}
+
+	.mobile-copy-section {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.divider {
+		position: relative;
+		text-align: center;
+		margin: var(--space-2) 0;
+	}
+
+	.divider::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 0;
+		right: 0;
+		height: 1px;
+		background: var(--color-border);
+	}
+
+	.divider span {
+		position: relative;
+		padding: 0 var(--space-3);
+		background: var(--color-background);
+		color: var(--color-muted-foreground);
+		font-size: var(--text-xs);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	/* Desktop QR Code */
 	.qr-container {
 		display: flex;
 		flex-direction: column;
@@ -316,6 +723,8 @@
 		font-weight: var(--font-medium);
 		cursor: pointer;
 		transition: all 150ms ease;
+		width: 100%;
+		justify-content: center;
 	}
 
 	.copy-button:hover {
@@ -464,6 +873,10 @@
 		.wallet-connecting {
 			max-width: 100%;
 			border-radius: var(--radius-lg);
+		}
+
+		.wallet-grid {
+			grid-template-columns: repeat(2, 1fr);
 		}
 	}
 </style>

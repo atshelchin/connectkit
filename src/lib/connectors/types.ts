@@ -77,6 +77,7 @@ export interface ConnectorEvents {
 	accountsChanged: (accounts: Address[]) => void;
 	error: (error: Error) => void;
 	display_uri?: (uri: string) => void;
+	mobile_wallet_selection?: (uri: string) => void;
 }
 
 /**

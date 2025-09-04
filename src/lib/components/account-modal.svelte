@@ -52,7 +52,7 @@
 
 	// Track chain for reverting on failure - initialize with current chainId
 	let displayedChainId = $state(chainId || 1);
-	// let targetChainId = $state<number | null>(null);
+	let targetChainId = $state<number | null>(null);
 
 	// Update displayed chain when actual chain changes successfully
 	$effect(() => {
@@ -232,6 +232,7 @@
 			isSwitchingChain = false;
 		}
 	}
+	console.log({ targetChainId });
 </script>
 
 <Modal {open} {onClose}>
