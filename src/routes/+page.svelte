@@ -3,6 +3,9 @@
 	import ModalExamples from '$lib/components/modal.examples.svelte';
 	import ThemeToggleExamples from '$lib/components/theme-toggle.examples.svelte';
 	import ConnectButtonExamples from '$lib/components/connect-button.examples.svelte';
+	import AvatarExamples from '$lib/components/avatar.examples.svelte';
+	import AddressDisplayExamples from '$lib/components/address-display.examples.svelte';
+	import EthereumIdentityExamples from '$lib/components/ethereum-identity.examples.svelte';
 </script>
 
 <div class="container">
@@ -28,6 +31,20 @@
 	<section class="component-section">
 		<h2>Modal Component</h2>
 		<ModalExamples />
+	</section>
+	<section class="component-section">
+		<h2>Avatar Component</h2>
+		<AvatarExamples />
+	</section>
+
+	<section class="component-section">
+		<h2>Address Display</h2>
+		<AddressDisplayExamples />
+	</section>
+
+	<section class="component-section">
+		<h2>Ethereum Identity</h2>
+		<EthereumIdentityExamples />
 	</section>
 </div>
 

@@ -69,6 +69,7 @@
 		"svelte"
 	],
 	"dependencies": {
-		"@lucide/svelte": "^0.542.0"
+		"@lucide/svelte": "^0.542.0",
+		"viem": "^2.37.2"
 	}
 }
