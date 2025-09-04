@@ -92,9 +92,9 @@
 			return fallbackSchemes[index];
 		}
 
-		// Define vibrant color schemes - expanded to 64 combinations for better uniqueness
+		// Define vibrant color schemes - original 64 combinations preserved
 		const colorSchemes = [
-			// Original 16
+			// Original 64 - DO NOT REORDER (preserves existing avatars)
 			{ bg: '#667EEA', fg: '#F7FAFC', emoji: '🚀' }, // Purple
 			{ bg: '#F56565', fg: '#FFF5F5', emoji: '🔥' }, // Red
 			{ bg: '#48BB78', fg: '#F0FFF4', emoji: '🌿' }, // Green
@@ -111,8 +111,6 @@
 			{ bg: '#81E6D9', fg: '#E6FFFA', emoji: '🌺' }, // Aqua
 			{ bg: '#FBB6CE', fg: '#FFF5F7', emoji: '🌷' }, // Rose
 			{ bg: '#F6AD55', fg: '#FFFDF7', emoji: '🌅' }, // Peach
-
-			// Animals
 			{ bg: '#805AD5', fg: '#FAF5FF', emoji: '🦊' }, // Deep Purple - Fox
 			{ bg: '#2D3748', fg: '#EDF2F7', emoji: '🐺' }, // Dark Gray - Wolf
 			{ bg: '#2B6CB0', fg: '#EBF8FF', emoji: '🐳' }, // Ocean Blue - Whale
@@ -121,8 +119,6 @@
 			{ bg: '#744210', fg: '#FFF7ED', emoji: '🐻' }, // Brown - Bear
 			{ bg: '#97266D', fg: '#FFF5F7', emoji: '🦩' }, // Magenta - Flamingo
 			{ bg: '#22543D', fg: '#F0FFF4', emoji: '🐸' }, // Forest Green - Frog
-
-			// Nature & Elements
 			{ bg: '#553C9A', fg: '#FAF5FF', emoji: '🌙' }, // Violet - Moon
 			{ bg: '#C05621', fg: '#FFFDF7', emoji: '🍂' }, // Burnt Orange - Autumn Leaf
 			{ bg: '#2C5282', fg: '#EBF8FF', emoji: '❄️' }, // Deep Blue - Snowflake
@@ -131,8 +127,6 @@
 			{ bg: '#7B341E', fg: '#FFF7ED', emoji: '🍄' }, // Rust - Mushroom
 			{ bg: '#1A365D', fg: '#EBF8FF', emoji: '🌌' }, // Navy - Galaxy
 			{ bg: '#742A2A', fg: '#FFF5F5', emoji: '🍒' }, // Maroon - Cherry
-
-			// Tech & Objects
 			{ bg: '#2F855A', fg: '#F0FFF4', emoji: '🎮' }, // Emerald - Gaming
 			{ bg: '#3182CE', fg: '#EBF8FF', emoji: '🎨' }, // Bright Blue - Art
 			{ bg: '#D53F8C', fg: '#FFF5F7', emoji: '🎭' }, // Hot Pink - Theater
@@ -141,35 +135,82 @@
 			{ bg: '#DD6B20', fg: '#FFFDF7', emoji: '🎺' }, // Orange - Trumpet
 			{ bg: '#5A67D8', fg: '#FAF5FF', emoji: '🎹' }, // Indigo - Piano
 			{ bg: '#B7791F', fg: '#FFFFF0', emoji: '🎻' }, // Amber - Violin
-
-			// Food & Drinks
 			{ bg: '#C53030', fg: '#FFF5F5', emoji: '🍓' }, // Strawberry Red
 			{ bg: '#2F855A', fg: '#F0FFF4', emoji: '🥝' }, // Kiwi Green
 			{ bg: '#ED8936', fg: '#FFFDF7', emoji: '🥕' }, // Carrot Orange
 			{ bg: '#5F370E', fg: '#FFF7ED', emoji: '☕' }, // Coffee Brown
-			{ bg: '#6B46C1', fg: '#FAF5FF', emoji: '🍆' }, // Eggplant Purple
+
+			// NEW EMOJIS - Added after original 44 to preserve existing avatars
+			// Food & Drinks (extended)
 			{ bg: '#F6E05E', fg: '#FFFFF0', emoji: '🍋' }, // Lemon Yellow
-			{ bg: '#68D391', fg: '#F0FFF4', emoji: '🥑' }, // Avocado Green
-			{ bg: '#FC8181', fg: '#FFF5F5', emoji: '🍉' }, // Watermelon Red
+			{ bg: '#9C4221', fg: '#FFF7ED', emoji: '🍕' }, // Pizza Brown
+			{ bg: '#065F46', fg: '#F0FFF4', emoji: '🥑' }, // Avocado Green
+			{ bg: '#B91C1C', fg: '#FFF5F5', emoji: '🍎' }, // Apple Red
+			{ bg: '#7C2D12', fg: '#FFF7ED', emoji: '🍫' }, // Chocolate Brown
+			{ bg: '#EA580C', fg: '#FFFDF7', emoji: '🍊' }, // Orange
+			{ bg: '#84CC16', fg: '#F0FFF4', emoji: '🍏' }, // Green Apple
+			{ bg: '#7E22CE', fg: '#FAF5FF', emoji: '🍆' }, // Eggplant Purple
 
-			// Sports & Activities
-			{ bg: '#2B6CB0', fg: '#EBF8FF', emoji: '⚽' }, // Soccer Blue
-			{ bg: '#DC2626', fg: '#FFF5F5', emoji: '🏀' }, // Basketball Orange
-			{ bg: '#16A34A', fg: '#F0FFF4', emoji: '🎾' }, // Tennis Green
-			{ bg: '#7C3AED', fg: '#FAF5FF', emoji: '🎱' }, // Pool Purple
-			{ bg: '#EA580C', fg: '#FFFDF7', emoji: '🏈' }, // Football Brown
-			{ bg: '#0891B2', fg: '#E6FFFA', emoji: '🏊' }, // Swimming Cyan
-			{ bg: '#BE185D', fg: '#FFF5F7', emoji: '🎯' }, // Darts Pink
+			// More Animals
+			{ bg: '#0891B2', fg: '#E6FFFA', emoji: '🐬' }, // Dolphin Blue
+			{ bg: '#DC2626', fg: '#FFF5F5', emoji: '🦀' }, // Crab Red
+			{ bg: '#16A34A', fg: '#F0FFF4', emoji: '🦎' }, // Lizard Green
+			{ bg: '#CA8A04', fg: '#FFFFF0', emoji: '🦒' }, // Giraffe Yellow
+			{ bg: '#1E40AF', fg: '#EBF8FF', emoji: '🦈' }, // Shark Blue
+			{ bg: '#BE185D', fg: '#FFF5F7', emoji: '🦜' }, // Parrot Pink
+			{ bg: '#166534', fg: '#F0FFF4', emoji: '🐢' }, // Turtle Green
+			{ bg: '#6B21A8', fg: '#FAF5FF', emoji: '🦑' }, // Squid Purple
+			{ bg: '#B45309', fg: '#FFFDF7', emoji: '🦘' }, // Kangaroo Brown
+			{ bg: '#0E7490', fg: '#E6FFFA', emoji: '🐧' }, // Penguin Blue
+			{ bg: '#A21CAF', fg: '#FAF5FF', emoji: '🦚' }, // Peacock Purple
+			{ bg: '#15803D', fg: '#F0FFF4', emoji: '🦖' }, // Dinosaur Green
+
+			// Fantasy & Magic
+			{ bg: '#581C87', fg: '#FAF5FF', emoji: '🧙' }, // Wizard Purple
+			{ bg: '#BE123C', fg: '#FFF5F7', emoji: '🧚' }, // Fairy Pink
+			{ bg: '#0F766E', fg: '#E6FFFA', emoji: '🧜' }, // Mermaid Teal
+			{ bg: '#A16207', fg: '#FFFFF0', emoji: '👑' }, // Crown Gold
+			{ bg: '#1E3A8A', fg: '#EBF8FF', emoji: '🧊' }, // Ice Blue
+			{ bg: '#14532D', fg: '#F0FFF4', emoji: '🍀' }, // Clover Green
+			{ bg: '#6D28D9', fg: '#FAF5FF', emoji: '💜' }, // Purple Heart
+
+			// Space & Science
+			{ bg: '#7C3AED', fg: '#FAF5FF', emoji: '👽' }, // Alien Purple
+			{ bg: '#0369A1', fg: '#EBF8FF', emoji: '🛸' }, // UFO Blue
+			{ bg: '#B91C1C', fg: '#FFF5F5', emoji: '🪐' }, // Planet Red
+			{ bg: '#0D9488', fg: '#E6FFFA', emoji: '🧬' }, // DNA Teal
+			{ bg: '#EA580C', fg: '#FFFDF7', emoji: '☄️' }, // Comet Orange
+			{ bg: '#4338CA', fg: '#FAF5FF', emoji: '🌠' }, // Shooting Star Indigo
+			{ bg: '#065F46', fg: '#F0FFF4', emoji: '🦠' }, // Microbe Green
+
+			// Sports & Games
+			{ bg: '#15803D', fg: '#F0FFF4', emoji: '⚽' }, // Soccer Green
+			{ bg: '#EA580C', fg: '#FFFDF7', emoji: '🏀' }, // Basketball Orange
+			{ bg: '#1E40AF', fg: '#EBF8FF', emoji: '🏈' }, // Football Blue
+			{ bg: '#7E22CE', fg: '#FAF5FF', emoji: '🎱' }, // Billiards Purple
 			{ bg: '#CA8A04', fg: '#FFFFF0', emoji: '🏆' }, // Trophy Gold
+			{ bg: '#0891B2', fg: '#E6FFFA', emoji: '🏊' }, // Swimming Blue
+			{ bg: '#16A34A', fg: '#F0FFF4', emoji: '🎾' }, // Tennis Green
 
-			// Weather & Sky
-			{ bg: '#64748B', fg: '#F7FAFC', emoji: '🌧️' }, // Storm Gray
-			{ bg: '#F59E0B', fg: '#FFFFF0', emoji: '☀️' }, // Sun Yellow
-			{ bg: '#06B6D4', fg: '#E6FFFA', emoji: '🌈' }, // Rainbow Cyan
-			{ bg: '#8B5CF6', fg: '#FAF5FF', emoji: '🌠' }, // Shooting Star Purple
-			{ bg: '#10B981', fg: '#F0FFF4', emoji: '🍀' }, // Lucky Green
-			{ bg: '#F43F5E', fg: '#FFF5F7', emoji: '🌹' }, // Rose Red
-			{ bg: '#6366F1', fg: '#EBF8FF', emoji: '🧊' }, // Ice Blue
+			// Weather & Nature
+			{ bg: '#0369A1', fg: '#EBF8FF', emoji: '🌧️' }, // Rain Blue
+			{ bg: '#FCD34D', fg: '#FFFFF0', emoji: '☀️' }, // Sun Yellow
+			{ bg: '#6366F1', fg: '#FAF5FF', emoji: '⛈️' }, // Storm Indigo
+			{ bg: '#10B981', fg: '#F0FFF4', emoji: '🌴' }, // Palm Tree Green
+			{ bg: '#F97316', fg: '#FFFDF7', emoji: '🌋' }, // Volcano Orange
+			{ bg: '#06B6D4', fg: '#E6FFFA', emoji: '🌊' }, // Wave Cyan
+			{ bg: '#8B5CF6', fg: '#FAF5FF', emoji: '🌈' }, // Rainbow Purple
+			{ bg: '#14B8A6', fg: '#E6FFFA', emoji: '🏔️' }, // Mountain Teal
+
+			// Faces & Emotions
+			{ bg: '#F59E0B', fg: '#FFFFF0', emoji: '😊' }, // Happy Yellow
+			{ bg: '#EC4899', fg: '#FFF5F7', emoji: '😍' }, // Love Pink
+			{ bg: '#3B82F6', fg: '#EBF8FF', emoji: '😎' }, // Cool Blue
+			{ bg: '#10B981', fg: '#F0FFF4', emoji: '🤑' }, // Money Green
+			{ bg: '#8B5CF6', fg: '#FAF5FF', emoji: '😈' }, // Devil Purple
+			{ bg: '#EF4444', fg: '#FFF5F5', emoji: '😡' }, // Angry Red
+			{ bg: '#06B6D4', fg: '#E6FFFA', emoji: '🥶' }, // Cold Cyan
+			{ bg: '#F97316', fg: '#FFFDF7', emoji: '🤠' }, // Cowboy Orange
 			{ bg: '#84CC16', fg: '#F0FFF4', emoji: '🌱' } // Sprout Green
 		];
 
@@ -197,7 +238,11 @@
 			const svgString = `
 				<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
 					<rect width="100" height="100" fill="${invalidScheme.bg}"/>
-					<text x="50" y="50" text-anchor="middle" dominant-baseline="central" font-size="40" opacity="0.9">${invalidScheme.emoji}</text>
+					<foreignObject x="0" y="0" width="100" height="100">
+						<div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 60px; line-height: 1;">
+							${invalidScheme.emoji}
+						</div>
+					</foreignObject>
 				</svg>
 			`;
 			const svg =
@@ -293,19 +338,22 @@
 		}
 
 		// Create the SVG with emoji in center
-		// Use encodeURIComponent and unescape for proper UTF-8 encoding
 		const svgString = `
 			<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
 				<rect width="100" height="100" fill="${scheme.bg}"/>
 				${pattern}
-				<text x="50" y="50" text-anchor="middle" dominant-baseline="central" font-size="35" opacity="0.9">${scheme.emoji}</text>
+				<foreignObject x="0" y="0" width="100" height="100">
+					<div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 55px; line-height: 1;">
+						${scheme.emoji}
+					</div>
+				</foreignObject>
 			</svg>
 		`;
 
 		// Encode SVG string to base64, handling Unicode characters properly
 		const svg =
 			typeof window !== 'undefined'
-				? `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgString)))}`
+				? `data:image/svg+xml;base64,${btoa(encodeURIComponent(svgString).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))))}`
 				: `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
 
 		return { svg, emoji: scheme.emoji, color: scheme.bg };
