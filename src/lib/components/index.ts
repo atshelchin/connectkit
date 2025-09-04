@@ -2,3 +2,7 @@ export { default as ConnectButton } from './connect-button.svelte';
 export { default as LangToggle } from './lang-toggle.svelte';
 export { default as Modal } from './modal.svelte';
 export { default as ThemeToggle } from './theme-toggle.svelte';
+export { default as Avatar } from './avatar.svelte';
+export { default as AddressDisplay } from './address-display.svelte';
+export { default as EthereumIdentity } from './ethereum-identity.svelte';
+export { default as ChainIcon } from './chain-icon.svelte';
