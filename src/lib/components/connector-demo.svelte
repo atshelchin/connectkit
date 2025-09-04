@@ -40,7 +40,7 @@
 		const result = await configureConnectKit({
 			// Replace with your WalletConnect project ID
 			// This is a test project ID - replace with your own for production
-			walletConnectProjectId: '2c921904d8ebc91517cd11c1cc4a267f',
+			walletConnectProjectId: 'e3928bd840eee588e157816acb2c8ad8',
 			appName: 'ConnectKit Demo',
 			appDescription: 'A demo of the ConnectKit connector system',
 			chains: [mainnet, polygon, optimism, arbitrum, base],
@@ -184,6 +184,12 @@
 			} else if (err.code === 4001 || err.message?.includes('rejected')) {
 				// User rejected
 				message = '连接已被拒绝';
+			} else if (err.message?.includes('No wallet accounts')) {
+				// No accounts on the selected network
+				message = '该网络上没有可用的钱包账户，请先在钱包中创建或导入账户';
+			} else if (err.message?.includes('No accounts found')) {
+				// No accounts at all
+				message = '未找到钱包账户，请确保您的钱包已解锁并有可用账户';
 			} else if (err.message) {
 				message = err.message;
 			}
@@ -203,11 +209,9 @@
 
 	// Handle chain switch
 	async function handleChainSwitch(newChainId: number) {
-		try {
-			await store.switchChain(newChainId);
-		} catch (error) {
-			console.error('Failed to switch chain:', error);
-		}
+		// Let the error propagate to AccountModal for proper handling
+		// AccountModal will catch it and display appropriate feedback
+		await store.switchChain(newChainId);
 	}
 
 	// Cancel connection
@@ -277,12 +281,12 @@
 			{chainId}
 			onDisconnect={handleDisconnect}
 			onChainSwitch={handleChainSwitch}
-			onAccountSwitch={async (addr) => {
+			onAccountSwitch={async (addr: string) => {
 				if (store) {
 					await store.switchAccount(addr);
 				}
 			}}
-			onSignMessage={async (message) => {
+			onSignMessage={async (message: string) => {
 				if (store) {
 					return await store.signMessage(message);
 				}

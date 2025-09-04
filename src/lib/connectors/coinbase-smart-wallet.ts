@@ -176,18 +176,41 @@ export class CoinbaseSmartWalletConnector extends BaseConnector {
 		const chain = this.getChain(chainId);
 		const hexChainId = `0x${chainId.toString(16)}`;
 
+		// Set flag to prevent disconnect
+		this.isSwitchingChain = true;
+
 		try {
+			console.log('[Coinbase] Attempting to switch to chain:', chainId);
 			// 尝试切换到目标链
 			await this.provider.request({
 				method: 'wallet_switchEthereumChain',
 				params: [{ chainId: hexChainId }]
 			});
 
-			this.emit('chainChanged', chainId);
+			// Check if there are accounts on the new chain
+			const accounts = (await this.provider.request({
+				method: 'eth_accounts'
+			})) as Address[];
+
+			if (!accounts || accounts.length === 0) {
+				console.warn('[Coinbase] No accounts on chain', chainId);
+				throw new Error(`No wallet accounts available on this network`);
+			}
+
+			console.log('[Coinbase] Chain switch successful');
+			// Wallet will emit chainChanged event automatically
 		} catch (error) {
+			console.error('[Coinbase] Chain switch failed:', error);
+
+			// Re-throw our custom error about no accounts
+			if (error instanceof Error && error.message.includes('No wallet accounts')) {
+				throw error;
+			}
+
 			// 4902 表示链未添加到钱包
 			const err = error as { code?: number; message?: string };
 			if (err.code === 4902 && chain) {
+				console.log('[Coinbase] Chain not found, attempting to add...');
 				try {
 					// 尝试添加链
 					await this.provider.request({
@@ -204,9 +227,10 @@ export class CoinbaseSmartWalletConnector extends BaseConnector {
 							}
 						]
 					});
-
-					this.emit('chainChanged', chainId);
+					console.log('[Coinbase] Chain added successfully');
+					// Wallet will emit chainChanged event automatically
 				} catch (addError) {
+					console.error('[Coinbase] Failed to add chain:', addError);
 					const err = new Error(
 						addError instanceof Error ? addError.message : 'Failed to add chain'
 					);
@@ -218,6 +242,11 @@ export class CoinbaseSmartWalletConnector extends BaseConnector {
 				this.emit('error', err);
 				throw err;
 			}
+		} finally {
+			// Reset flag after operation
+			setTimeout(() => {
+				this.isSwitchingChain = false;
+			}, 1000);
 		}
 	}
 
@@ -243,6 +272,8 @@ export class CoinbaseSmartWalletConnector extends BaseConnector {
 	/**
 	 * 设置事件监听
 	 */
+	private isSwitchingChain = false;
+
 	private setupEventListeners(): void {
 		if (!this.provider) return;
 
@@ -258,8 +289,13 @@ export class CoinbaseSmartWalletConnector extends BaseConnector {
 		// 账户变更事件
 		this.provider.on('accountsChanged', (accounts: string[]) => {
 			const addresses = accounts as Address[];
-			if (addresses.length === 0) {
+			console.log('[Coinbase] accountsChanged event:', addresses);
+			// Don't disconnect if switching chains
+			if (addresses.length === 0 && !this.isSwitchingChain) {
+				console.log('[Coinbase] No accounts and not switching - disconnecting');
 				this.emit('disconnect');
+			} else if (addresses.length === 0 && this.isSwitchingChain) {
+				console.log('[Coinbase] No accounts but switching - NOT disconnecting');
 			} else {
 				this.emit('accountsChanged', addresses);
 			}

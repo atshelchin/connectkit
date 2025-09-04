@@ -192,6 +192,9 @@ export class EIP6963Connector extends BaseConnector {
 		const chain = this.getChain(chainId);
 		const hexChainId = `0x${chainId.toString(16)}`;
 
+		// Set flag to prevent disconnect on empty accounts
+		this.isSwitchingChain = true;
+
 		try {
 			console.log('[EIP6963] Requesting wallet to switch to chain:', hexChainId);
 			// 尝试切换到目标链
@@ -200,8 +203,8 @@ export class EIP6963Connector extends BaseConnector {
 				params: [{ chainId: hexChainId }]
 			});
 			console.log('[EIP6963] Wallet successfully switched to chain:', chainId);
-
-			this.emit('chainChanged', chainId);
+			// The wallet itself will emit chainChanged event, we don't need to do it manually
+			// This prevents double events and ensures we only emit when actually changed
 		} catch (error) {
 			console.log('[EIP6963] Wallet switch failed:', error);
 			// 4902 表示链未添加到钱包
@@ -225,8 +228,7 @@ export class EIP6963Connector extends BaseConnector {
 						params: [chainParams]
 					});
 					console.log('[EIP6963] Chain added successfully, wallet should have switched');
-
-					this.emit('chainChanged', chainId);
+					// The wallet will emit chainChanged event automatically
 				} catch (addError) {
 					console.error('[EIP6963] Failed to add chain:', addError);
 					const err = new Error(
@@ -241,6 +243,11 @@ export class EIP6963Connector extends BaseConnector {
 				this.emit('error', err);
 				throw err;
 			}
+		} finally {
+			// Reset flag after operation completes
+			setTimeout(() => {
+				this.isSwitchingChain = false;
+			}, 1000); // Give time for events to settle
 		}
 	}
 
@@ -263,6 +270,7 @@ export class EIP6963Connector extends BaseConnector {
 	 * 设置事件监听
 	 */
 	private eventListenersSetup = false;
+	private isSwitchingChain = false; // Track if we're switching chains
 
 	private setupEventListeners(): void {
 		if (!this.provider) return;
@@ -273,8 +281,13 @@ export class EIP6963Connector extends BaseConnector {
 		// 账户变更
 		this.provider.on('accountsChanged', (...args: unknown[]) => {
 			const accounts = args[0] as Address[];
-			if (accounts.length === 0) {
+			console.log('[EIP6963] accountsChanged event received:', accounts);
+			// Don't disconnect if we're switching chains - the wallet is still connected
+			if (accounts.length === 0 && !this.isSwitchingChain) {
+				console.log('[EIP6963] No accounts and not switching chains - emitting disconnect');
 				this.emit('disconnect');
+			} else if (accounts.length === 0 && this.isSwitchingChain) {
+				console.log('[EIP6963] No accounts but switching chains - NOT disconnecting');
 			} else {
 				// 触发账户变更事件，包含所有账户
 				this.emit('accountsChanged', accounts);

@@ -88,22 +88,68 @@ export class WalletConnectConnector extends BaseConnector {
 			});
 
 			// 启用 provider（触发连接流程）
-			const accounts = (await this.provider.enable()) as Address[];
-
-			if (!accounts || accounts.length === 0) {
-				throw new Error('No accounts found');
-			}
+			let accounts = (await this.provider.enable()) as Address[];
 
 			// 获取当前链 ID
-			const currentChainId = await this.getChainId();
+			let currentChainId = await this.getChainId();
 
 			// 如果指定了链 ID 且与当前不同，尝试切换
 			if (chainId && chainId !== currentChainId) {
-				await this.switchChain(chainId);
+				console.log('[WalletConnect] Switching to requested chain:', chainId);
+				try {
+					await this.switchChain(chainId);
+					currentChainId = chainId;
+
+					// After switching chain, get accounts again as they might have changed
+					accounts = (await this.provider.request({
+						method: 'eth_accounts'
+					})) as Address[];
+
+					// If still no accounts after switch, it means this network doesn't have accounts
+					if (!accounts || accounts.length === 0) {
+						console.warn(
+							'[WalletConnect] No accounts on chain',
+							chainId,
+							'- staying on original chain'
+						);
+						// Try to switch back to original chain
+						try {
+							await this.switchChain(currentChainId);
+							// Get accounts again on original chain
+							accounts = (await this.provider.request({
+								method: 'eth_accounts'
+							})) as Address[];
+						} catch (switchBackError) {
+							console.error('[WalletConnect] Failed to switch back:', switchBackError);
+						}
+					}
+				} catch (switchError) {
+					console.warn('[WalletConnect] Failed to switch to requested chain:', switchError);
+					// Continue with current chain
+				}
+			}
+
+			// If still no accounts, try Ethereum mainnet as fallback
+			if (!accounts || accounts.length === 0) {
+				console.log('[WalletConnect] No accounts found, trying Ethereum mainnet as fallback');
+				try {
+					await this.switchChain(1); // Ethereum mainnet
+					accounts = (await this.provider.request({
+						method: 'eth_accounts'
+					})) as Address[];
+					currentChainId = 1;
+				} catch (mainnetError) {
+					console.error('[WalletConnect] Failed to switch to mainnet:', mainnetError);
+				}
+			}
+
+			if (!accounts || accounts.length === 0) {
+				throw new Error('No accounts found. Please ensure your wallet has at least one account.');
 			}
 
 			const address = accounts[0];
-			const connectedChainId = chainId || currentChainId;
+			// Use the actual chain we ended up on (might be different from requested if no accounts)
+			const connectedChainId = await this.getChainId();
 
 			// 清除 URI
 			this.uri = undefined;
@@ -190,15 +236,37 @@ export class WalletConnectConnector extends BaseConnector {
 		const chain = this.getChain(chainId);
 		const hexChainId = `0x${chainId.toString(16)}`;
 
+		// Set flag to prevent disconnect
+		this.isSwitchingChain = true;
+
 		try {
+			console.log('[WalletConnect] Switching to chain:', chainId);
 			// 尝试切换到目标链
 			await this.provider.request({
 				method: 'wallet_switchEthereumChain',
 				params: [{ chainId: hexChainId }]
 			});
 
+			// Check if there are accounts on the new chain
+			const accounts = (await this.provider.request({
+				method: 'eth_accounts'
+			})) as Address[];
+
+			if (!accounts || accounts.length === 0) {
+				console.warn('[WalletConnect] No accounts on chain', chainId);
+				// Don't emit chainChanged since we didn't actually switch
+				throw new Error(
+					`No wallet accounts available on this network (chain ID: ${chainId}). Please ensure your wallet has an account on this network.`
+				);
+			}
+
+			// Only emit if switch was successful
 			this.emit('chainChanged', chainId);
 		} catch (error) {
+			// If it's our custom error about no accounts, re-throw it
+			if (error instanceof Error && error.message.includes('No wallet accounts')) {
+				throw error;
+			}
 			// 4902 表示链未添加到钱包
 			const err = error as { code?: number; message?: string };
 			if (err.code === 4902 && chain) {
@@ -232,6 +300,11 @@ export class WalletConnectConnector extends BaseConnector {
 				this.emit('error', err);
 				throw err;
 			}
+		} finally {
+			// Reset flag after operation
+			setTimeout(() => {
+				this.isSwitchingChain = false;
+			}, 1000);
 		}
 	}
 
@@ -258,14 +331,21 @@ export class WalletConnectConnector extends BaseConnector {
 	/**
 	 * 设置事件监听
 	 */
+	private isSwitchingChain = false;
+
 	private setupEventListeners(): void {
 		if (!this.provider) return;
 
 		// 账户变更
 		this.provider.on('accountsChanged', (accounts: string[]) => {
 			const addresses = accounts as Address[];
-			if (addresses.length === 0) {
+			console.log('[WalletConnect] accountsChanged event:', addresses);
+			// Don't disconnect if switching chains - wallet is still connected
+			if (addresses.length === 0 && !this.isSwitchingChain) {
+				console.log('[WalletConnect] No accounts and not switching - disconnecting');
 				this.emit('disconnect');
+			} else if (addresses.length === 0 && this.isSwitchingChain) {
+				console.log('[WalletConnect] No accounts but switching - NOT disconnecting');
 			} else {
 				this.emit('accountsChanged', addresses);
 			}

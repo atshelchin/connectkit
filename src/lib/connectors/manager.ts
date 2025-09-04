@@ -49,7 +49,10 @@ export class WalletConnectionManager implements ConnectionManager {
 		});
 
 		connector.on('disconnect', () => {
+			console.log('[Manager] Received disconnect event from connector:', connector.name);
+			console.trace('[Manager] Disconnect event stack trace');
 			if (this.state.connector === connector) {
+				console.log('[Manager] Clearing connection state due to disconnect event');
 				this.updateState({
 					isConnected: false,
 					isConnecting: false,
@@ -67,6 +70,7 @@ export class WalletConnectionManager implements ConnectionManager {
 			console.log('[Manager] Received chainChanged event from connector:', chainId);
 			if (this.state.connector === connector) {
 				console.log('[Manager] Updating state with new chainId:', chainId);
+				// Only update chainId, keep all other connection info
 				this.updateState({
 					...this.state,
 					chainId
@@ -92,11 +96,14 @@ export class WalletConnectionManager implements ConnectionManager {
 		});
 
 		connector.on('error', (error) => {
+			console.log('[Manager] Connector error:', error);
+			// Only update error state, don't disconnect or clear connection info
 			if (this.state.connector === connector || this.state.isConnecting) {
 				this.updateState({
 					...this.state,
 					error,
 					isConnecting: false
+					// Keep all connection info (address, chainId, etc)
 				});
 			}
 		});
@@ -249,8 +256,15 @@ export class WalletConnectionManager implements ConnectionManager {
 	 */
 	async switchChain(chainId: number): Promise<void> {
 		console.log('[Manager] switchChain called with chainId:', chainId);
+		console.log('[Manager] Current connection state:', {
+			isConnected: this.state.isConnected,
+			address: this.state.address,
+			chainId: this.state.chainId,
+			connector: this.state.connector?.name
+		});
 
 		if (!this.state.connector) {
+			console.error('[Manager] No connector in state, full state:', this.state);
 			throw new Error('No connector connected');
 		}
 
@@ -265,115 +279,49 @@ export class WalletConnectionManager implements ConnectionManager {
 			console.log('[Manager] Chain switch successful to chainId:', chainId);
 		} catch (error: unknown) {
 			console.log('[Manager] Chain switch failed with error:', error);
+			console.log('[Manager] State after error:', {
+				isConnected: this.state.isConnected,
+				address: this.state.address,
+				chainId: this.state.chainId,
+				connector: this.state.connector?.name
+			});
+
+			// CRITICAL: Preserve connection state when network switch fails
+			// The wallet is still connected on the original chain
+			console.log('[Manager] Chain switch failed, preserving connection state');
+
+			// Make sure we maintain the current state
+			const currentState = this.getState();
+			if (currentState.isConnected && currentState.address) {
+				console.log(
+					'[Manager] Forcing state persistence with current chain:',
+					currentState.chainId
+				);
+				// Force update to ensure UI doesn't lose connection info
+				this.updateState(currentState);
+				// Persist to localStorage to prevent any loss
+				this.persistConnection();
+			}
+
 			// Check if it's a chain not added error
 			const err = error as { code?: number; message?: string };
-			if (err.code === 4902 || err.message?.includes('Unrecognized chain')) {
-				console.log('[Manager] Chain not found, attempting to add chain first...');
-				// Chain doesn't exist, try to add it first
-				await this.addChain(chainId);
-				console.log('[Manager] Chain added, retrying switch...');
-				// Try switching again
-				await this.state.connector.switchChain!(chainId);
-				console.log('[Manager] Chain switch successful after adding chain');
+
+			// Format user-friendly error messages
+			if (err.message?.includes('No wallet accounts')) {
+				// No accounts on this network
+				throw new Error(`该网络上没有可用的钱包账户`);
+			} else if (err.code === 4902 || err.message?.includes('Unrecognized chain')) {
+				console.log('[Manager] Chain not found in wallet');
+				throw new Error(`钱包不支持该网络`);
+			} else if (err.code === 4001 || err.message?.includes('User rejected')) {
+				// User rejected
+				throw new Error('已取消切换');
 			} else {
-				console.error('[Manager] Chain switch failed with unexpected error:', error);
-				throw error;
+				console.error('[Manager] Chain switch failed:', error);
+				// Generic error
+				throw new Error('网络切换失败');
 			}
 		}
-	}
-
-	/**
-	 * Add a new chain to the wallet
-	 */
-	private async addChain(chainId: number): Promise<void> {
-		if (!this.state.connector) {
-			throw new Error('No connector connected');
-		}
-
-		// Get chain configuration
-		const chainConfig = this.getChainConfig(chainId);
-		if (!chainConfig) {
-			throw new Error(`Unknown chain ID: ${chainId}`);
-		}
-
-		// Get wallet client to add chain
-		const walletClient = await this.state.connector.getWalletClient();
-
-		await walletClient.request({
-			method: 'wallet_addEthereumChain',
-			params: [chainConfig]
-		});
-	}
-
-	/**
-	 * Get chain configuration for adding to wallet
-	 */
-	private getChainConfig(chainId: number):
-		| {
-				chainId: string;
-				chainName: string;
-				nativeCurrency: {
-					name: string;
-					symbol: string;
-					decimals: number;
-				};
-				rpcUrls: string[];
-				blockExplorerUrls?: string[];
-		  }
-		| undefined {
-		// Chain configurations
-		const configs: Record<
-			number,
-			{
-				chainId: string;
-				chainName: string;
-				nativeCurrency: {
-					name: string;
-					symbol: string;
-					decimals: number;
-				};
-				rpcUrls: string[];
-				blockExplorerUrls?: string[];
-			}
-		> = {
-			1: {
-				chainId: '0x1',
-				chainName: 'Ethereum Mainnet',
-				nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-				rpcUrls: ['https://eth.llamarpc.com'],
-				blockExplorerUrls: ['https://etherscan.io']
-			},
-			137: {
-				chainId: '0x89',
-				chainName: 'Polygon',
-				nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-				rpcUrls: ['https://polygon-rpc.com'],
-				blockExplorerUrls: ['https://polygonscan.com']
-			},
-			10: {
-				chainId: '0xa',
-				chainName: 'Optimism',
-				nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-				rpcUrls: ['https://mainnet.optimism.io'],
-				blockExplorerUrls: ['https://optimistic.etherscan.io']
-			},
-			42161: {
-				chainId: '0xa4b1',
-				chainName: 'Arbitrum One',
-				nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-				rpcUrls: ['https://arb1.arbitrum.io/rpc'],
-				blockExplorerUrls: ['https://arbiscan.io']
-			},
-			8453: {
-				chainId: '0x2105',
-				chainName: 'Base',
-				nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-				rpcUrls: ['https://mainnet.base.org'],
-				blockExplorerUrls: ['https://basescan.org']
-			}
-		};
-
-		return configs[chainId];
 	}
 
 	/**

@@ -1,5 +1,5 @@
 import type { Chain } from 'viem';
-import { mainnet, polygon, optimism, arbitrum, base } from 'viem/chains';
+import { mainnet, polygon, optimism, arbitrum, base, bsc } from 'viem/chains';
 import {
 	initializeWalletStore,
 	createEIP6963Connector,
@@ -39,7 +39,7 @@ export interface ConnectKitConfig {
 }
 
 // Default chains
-const defaultChains = [mainnet, polygon, optimism, arbitrum, base];
+const defaultChains = [mainnet, polygon, optimism, arbitrum, base, bsc];
 
 /**
  * Configure and initialize ConnectKit

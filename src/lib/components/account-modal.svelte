@@ -2,6 +2,8 @@
 	import Modal from './modal.svelte';
 	import EthereumIdentity from './ethereum-identity.svelte';
 	import NetworkSelector from './network-selector.svelte';
+	import Alert from './alert.svelte';
+	import ChainSwitchFeedback from './chain-switch-feedback.svelte';
 	import {
 		hasValidSIWESession,
 		generateNonce,
@@ -43,6 +45,23 @@
 	let signingIn = $state(false);
 	let showAccountSelector = $state(false);
 	let copied = $state(false);
+	let switchError = $state<string | undefined>();
+	let isSwitchingChain = $state(false);
+	let switchFeedback = $state<'loading' | 'error' | 'success' | null>(null);
+	let switchFeedbackMessage = $state<string>('');
+
+	// Track chain for reverting on failure - initialize with current chainId
+	let displayedChainId = $state(chainId || 1);
+	// let targetChainId = $state<number | null>(null);
+
+	// Update displayed chain when actual chain changes successfully
+	$effect(() => {
+		// Only update if not currently switching and chainId is defined
+		if (!isSwitchingChain && chainId) {
+			console.log('[AccountModal] Updating displayedChainId from prop:', chainId);
+			displayedChainId = chainId;
+		}
+	});
 
 	// Check SIWE session on mount and when address changes
 	$effect(() => {
@@ -112,6 +131,105 @@
 		if (onAccountSwitch) {
 			await onAccountSwitch(newAddress);
 			showAccountSelector = false;
+		}
+	}
+
+	// Handle chain switch with error handling
+	async function handleChainSwitch(newTargetChainId: number) {
+		if (!onChainSwitch) return;
+
+		// Don't attempt to switch if we're in an invalid state
+		if (!address) {
+			console.warn('[AccountModal] Cannot switch chain - no wallet connected');
+			return;
+		}
+
+		// Prevent multiple simultaneous switches
+		if (isSwitchingChain) {
+			console.warn('[AccountModal] Chain switch already in progress');
+			return;
+		}
+
+		// Store the current chain before switching - use displayedChainId which tracks the actual current chain
+		const previousChain = displayedChainId || chainId || 1;
+		console.log(
+			'[AccountModal] Current displayedChainId:',
+			displayedChainId,
+			'chainId:',
+			chainId,
+			'previousChain:',
+			previousChain
+		);
+
+		switchError = undefined;
+		isSwitchingChain = true;
+		targetChainId = newTargetChainId;
+		switchFeedback = 'loading';
+		switchFeedbackMessage = '切换中...';
+
+		// Optimistically update the displayed chain
+		displayedChainId = newTargetChainId;
+
+		try {
+			await onChainSwitch(newTargetChainId);
+			// Success - the actual chainId will update via props
+			switchFeedback = 'success';
+			switchFeedbackMessage = '切换成功';
+			targetChainId = null;
+			// Auto-hide success after 2 seconds
+			setTimeout(() => {
+				switchFeedback = null;
+			}, 2000);
+		} catch (error) {
+			console.error(
+				'[AccountModal] Chain switch failed, attempting to revert to chain:',
+				previousChain
+			);
+			const err = error as Error;
+
+			// Show user-friendly error message
+			let errorMsg = '切换网络失败';
+			if (err.message.includes('No connector connected')) {
+				errorMsg = '钱包未连接';
+			} else if (err.message) {
+				errorMsg = err.message;
+			}
+
+			// Try to switch back to the previous chain (only if it's different from target)
+			if (previousChain !== newTargetChainId) {
+				try {
+					console.log('[AccountModal] Attempting to revert to previous chain:', previousChain);
+					await onChainSwitch(previousChain);
+					console.log('[AccountModal] Successfully reverted to previous chain');
+
+					// Update UI to show we're back on the previous chain
+					displayedChainId = previousChain;
+					switchFeedback = 'error';
+					switchFeedbackMessage = errorMsg + '，已切回原网络';
+				} catch (revertError) {
+					console.error('[AccountModal] Failed to revert to previous chain:', revertError);
+					// Even if revert fails, stay on current chain
+					// The wallet is likely still on the previous chain anyway
+					displayedChainId = previousChain;
+					switchFeedback = 'error';
+					switchFeedbackMessage = errorMsg + '，保持在当前网络';
+				}
+			} else {
+				// Can't revert to same chain
+				displayedChainId = chainId || 1;
+				switchFeedback = 'error';
+				switchFeedbackMessage = errorMsg;
+			}
+
+			targetChainId = null;
+			switchError = errorMsg;
+
+			// Auto-hide error after 5 seconds
+			setTimeout(() => {
+				switchFeedback = null;
+			}, 5000);
+		} finally {
+			isSwitchingChain = false;
 		}
 	}
 </script>
@@ -244,9 +362,26 @@
 						</button>
 					</div>
 
+					{#if switchError}
+						<Alert
+							type="error"
+							message={switchError}
+							onClose={() => (switchError = undefined)}
+							autoClose={8000}
+							class="switch-error-margin"
+						/>
+					{/if}
+
 					<div class="network-siwe-row">
-						<!-- Network selector component -->
-						<NetworkSelector {chainId} {onChainSwitch} />
+						<!-- Network selector component with feedback -->
+						<div class="network-selector-wrapper">
+							<NetworkSelector chainId={displayedChainId} onChainSwitch={handleChainSwitch} />
+							<ChainSwitchFeedback
+								show={switchFeedback !== null}
+								type={switchFeedback || 'loading'}
+								message={switchFeedbackMessage}
+							/>
+						</div>
 						<!-- SIWE Status -->
 						<div class="siwe-section">
 							{#if isSignedIn}
@@ -580,10 +715,20 @@
 		color: var(--color-primary, #3b82f6);
 	}
 
+	/* Use global to style the Alert component when used here */
+	:global(.switch-error-margin) {
+		margin-bottom: var(--space-3);
+	}
+
 	.network-siwe-row {
 		display: flex;
 		gap: var(--space-2);
 		align-items: stretch;
+	}
+
+	.network-selector-wrapper {
+		position: relative;
+		flex-shrink: 0;
 	}
 
 	.network-siwe-row > :global(.network-selector) {
