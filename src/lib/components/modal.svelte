@@ -285,7 +285,7 @@
 		color: var(--color-popover-foreground);
 		box-shadow: var(--shadow-2xl);
 		max-width: 90vw;
-		max-height: 90vh;
+		max-height: 85vh;
 		overflow: visible;
 		animation: modal-in 200ms ease-out;
 	}
@@ -323,7 +323,7 @@
 	.modal-content {
 		display: flex;
 		flex-direction: column;
-		max-height: 90vh;
+		max-height: 85vh;
 		overflow: hidden;
 		position: relative;
 		transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -451,7 +451,7 @@
 			max-width: 100%;
 			width: 100%;
 			height: auto;
-			max-height: 90vh; /* Slightly less than full height for visual breathing room */
+			max-height: 85vh; /* Leave more space at the top for iPhone */
 			border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 			animation: sheet-slide-up 300ms cubic-bezier(0.32, 0.72, 0, 1);
 			will-change: transform, opacity;
@@ -469,7 +469,7 @@
 			display: flex;
 			flex-direction: column;
 			height: auto;
-			max-height: 90vh;
+			max-height: 85vh;
 			border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 			overflow: hidden;
 		}

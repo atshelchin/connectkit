@@ -5,6 +5,10 @@
 	let basicModal = $state(false);
 	let noOverlayModal = $state(false);
 	let footerModal = $state(false);
+	let longContentModal = $state(false);
+
+	// Ref for scrollable content
+	let scrollableContent: HTMLElement;
 
 	// Custom props state
 	let customProps = $state({
@@ -21,6 +25,24 @@
 	Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 	Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
 	Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`;
+
+	// Generate very long content for scroll demo
+	const veryLongContent = Array.from(
+		{ length: 50 },
+		(_, i) => `
+		<h3>Section ${i + 1}</h3>
+		<p>This is paragraph ${i + 1} of the long content. Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
+		Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, 
+		quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+		<p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. 
+		Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+		<ul>
+			<li>List item 1 for section ${i + 1}</li>
+			<li>List item 2 for section ${i + 1}</li>
+			<li>List item 3 for section ${i + 1}</li>
+		</ul>
+	`
+	).join('');
 
 	function handleConfirm() {
 		console.log('Confirmed!');
@@ -73,6 +95,10 @@
 			<button class="btn" onclick={() => (footerModal = true)}> Modal with Footer </button>
 
 			<button class="btn" onclick={() => (noOverlayModal = true)}> No Overlay Close </button>
+
+			<button class="btn" onclick={() => (longContentModal = true)}>
+				Long Content (Scrollable)
+			</button>
 		</div>
 	</div>
 </div>
@@ -127,6 +153,40 @@
 	<div class="info-box">
 		<strong>Note:</strong> closeOnOverlay is set to false
 	</div>
+</Modal>
+
+<!-- Long Content Modal with Scrolling -->
+<Modal bind:open={longContentModal} title="Long Content Example" size="lg">
+	<div class="long-content-wrapper" bind:this={scrollableContent}>
+		<div class="info-box" style="margin-bottom: var(--space-4);">
+			<strong>📜 Scroll Demo:</strong> This modal contains a lot of content to demonstrate internal scrolling.
+			The modal body will show a scrollbar while the background remains locked.
+		</div>
+
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+		{@html veryLongContent}
+
+		<div class="info-box" style="margin-top: var(--space-6);">
+			<strong>🎉 You've reached the end!</strong> The modal body successfully scrolled while keeping
+			the modal header and footer (if present) in fixed positions.
+		</div>
+	</div>
+
+	{#snippet footer()}
+		<button class="btn btn-secondary" onclick={() => (longContentModal = false)}> Close </button>
+		<button
+			class="btn btn-primary"
+			onclick={() => {
+				// Find the modal-body element and scroll it
+				const modalBody = scrollableContent?.closest('.modal-body');
+				if (modalBody) {
+					modalBody.scrollTo({ top: 0, behavior: 'smooth' });
+				}
+			}}
+		>
+			Scroll to Top
+		</button>
+	{/snippet}
 </Modal>
 
 <style>
@@ -240,6 +300,34 @@
 		font-family: var(--font-family-mono);
 		font-size: var(--text-sm);
 		overflow-x: auto;
+	}
+
+	.long-content-wrapper {
+		/* Ensure content is readable */
+		line-height: 1.6;
+	}
+
+	.long-content-wrapper :global(h3) {
+		margin-top: var(--space-6);
+		margin-bottom: var(--space-3);
+		font-size: var(--text-lg);
+		font-weight: var(--font-semibold);
+		color: var(--color-heading-1);
+	}
+
+	.long-content-wrapper :global(p) {
+		margin-bottom: var(--space-4);
+		color: var(--color-foreground);
+	}
+
+	.long-content-wrapper :global(ul) {
+		margin-bottom: var(--space-4);
+		padding-left: var(--space-6);
+	}
+
+	.long-content-wrapper :global(li) {
+		margin-bottom: var(--space-2);
+		color: var(--color-muted-foreground);
 	}
 
 	.warning {
