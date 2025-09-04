@@ -13,7 +13,7 @@
 	let {
 		chainId,
 		size = 'md',
-		showWarning = true,
+		showWarning = false,
 
 		showTooltip = true,
 		className = ''
