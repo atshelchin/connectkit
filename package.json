@@ -69,7 +69,11 @@
 		"svelte"
 	],
 	"dependencies": {
+		"@base-org/account": "^2.1.0",
 		"@lucide/svelte": "^0.542.0",
+		"@walletconnect/ethereum-provider": "^2.21.8",
+		"qr-code-styling": "^1.9.2",
+		"qrcode": "^1.5.4",
 		"viem": "^2.37.2"
 	}
 }

@@ -7,6 +7,7 @@
 	import ChainIconExamples from '$lib/components/chain-icon.examples.svelte';
 	import WalletListExamples from '$lib/components/wallet-list.examples.svelte';
 	import ConnectedButtonExamples from '$lib/components/connected-button.examples.svelte';
+	import ConnectorDemoExamples from '$lib/components/connector-demo.examples.svelte';
 </script>
 
 <div class="container">
@@ -50,6 +51,11 @@
 	<section class="component-section">
 		<h2>Connected Button & Account Modal</h2>
 		<ConnectedButtonExamples />
+	</section>
+
+	<section class="component-section">
+		<h2>Complete Wallet Connector System</h2>
+		<ConnectorDemoExamples />
 	</section>
 </div>
 

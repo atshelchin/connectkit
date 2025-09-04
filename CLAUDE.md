@@ -65,6 +65,37 @@ npm run format       # Auto-format code with Prettier
 - Prefer type inference where possible
 - Use explicit types for function parameters and return values
 
+### Connector System Type Safety Rules
+
+1. **Private vs Protected Properties**:
+   - Use `protected` for properties that base classes define and subclasses need to access
+   - Use `private` only for truly internal properties specific to a class
+   - ❌ `constructor(private readonly options: ConnectorOptions)` when base class has `protected options`
+   - ✅ Match base class access modifiers exactly
+
+2. **SSR Compatibility**: Always check for browser environment before using window/document
+
+   ```typescript
+   // ❌ WRONG - causes SSR errors
+   window.addEventListener('event', handler);
+
+   // ✅ CORRECT - SSR safe
+   if (typeof window !== 'undefined') {
+   	window.addEventListener('event', handler);
+   }
+   ```
+
+3. **Provider Types**: Never use `any` for providers
+   - ❌ `private provider: any`
+   - ✅ `private provider: EthereumProvider | null`
+   - ✅ `private provider: BaseAccountSDKProvider | null`
+
+4. **Constructor Parameter Types**: Always type constructor parameters
+   - ❌ `constructor(options) { ... }`
+   - ✅ `constructor(options: SpecificOptionsType) { ... }`
+
+5. **Remove Unused Imports**: Keep imports clean and minimal
+
 ### Test Structure
 
 - **Unit Tests**: Vitest with two environments:

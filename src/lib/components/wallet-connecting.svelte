@@ -1,137 +1,222 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import QRCode from './qr-code.svelte';
+	import WalletIcon from './wallet-icon.svelte';
+
 	interface Props {
 		walletName: string;
 		walletIcon?: string;
-		onCancel?: () => void;
-		message?: string;
-		subMessage?: string;
 		mode?: 'default' | 'walletconnect';
 		walletConnectUri?: string;
+		message?: string;
+		errorMessage?: string;
+		onCancel?: () => void;
+		onRetry?: () => void;
+		className?: string;
 	}
 
 	let {
 		walletName,
 		walletIcon,
-		onCancel,
-		message,
-		subMessage = '在扩展中确认连接',
 		mode = 'default',
-		walletConnectUri = 'wc:1234567890abcdef...'
+		walletConnectUri,
+		message,
+		errorMessage,
+		onCancel,
+		onRetry,
+		className = ''
 	}: Props = $props();
 
-	// Compute the main message
+	let copyFeedback = $state(false);
+
+	// Display message based on mode
 	let displayMessage = $derived(
-		mode === 'walletconnect' ? '使用您的手机扫描' : message || `正在打开 ${walletName}...`
+		mode === 'walletconnect' ? 'Scan with Phone' : message || `正在打开 ${walletName}...`
 	);
 
-	// State for copy feedback
-	let copied = $state(false);
+	// Copy to clipboard
+	async function handleCopy() {
+		if (!walletConnectUri) return;
 
-	// Copy WalletConnect URI
-	function copyUri() {
-		if (walletConnectUri) {
-			navigator.clipboard.writeText(walletConnectUri);
-			copied = true;
-			setTimeout(() => (copied = false), 2000);
+		try {
+			// Use fallback for older browsers
+			if (navigator.clipboard && window.isSecureContext) {
+				await navigator.clipboard.writeText(walletConnectUri);
+			} else {
+				// Fallback method for non-secure contexts
+				const textArea = document.createElement('textarea');
+				textArea.value = walletConnectUri;
+				textArea.style.position = 'fixed';
+				textArea.style.left = '-999999px';
+				textArea.style.top = '-999999px';
+				document.body.appendChild(textArea);
+				textArea.focus();
+				textArea.select();
+
+				try {
+					document.execCommand('copy');
+				} finally {
+					textArea.remove();
+				}
+			}
+
+			copyFeedback = true;
+			setTimeout(() => {
+				copyFeedback = false;
+			}, 2000);
+		} catch (err) {
+			console.error('Failed to copy:', err);
 		}
 	}
+
+	// Auto-focus for accessibility
+	let containerRef: HTMLDivElement;
+	onMount(() => {
+		containerRef?.focus();
+	});
 </script>
 
-<div class="wallet-connecting">
+<div
+	class="wallet-connecting {className}"
+	bind:this={containerRef}
+	tabindex="-1"
+	role="dialog"
+	aria-labelledby="wallet-connecting-title"
+>
 	<div class="connecting-content">
-		{#if mode === 'walletconnect'}
-			<!-- WalletConnect QR Code Mode -->
-			<h3 class="connecting-title">{displayMessage}</h3>
+		<!-- Wallet Icon -->
+		<div class="wallet-icon-container">
+			<WalletIcon name={walletName} icon={walletIcon} size="xl" />
+		</div>
 
-			<div class="qr-container">
-				<!-- QR Code placeholder -->
-				<div class="qr-code">
-					<svg viewBox="0 0 200 200" class="qr-placeholder">
-						<!-- Simplified QR code pattern for placeholder -->
-						<rect width="200" height="200" fill="white" />
-						<g fill="black">
-							<!-- Corner patterns -->
-							<rect x="20" y="20" width="60" height="60" rx="4" />
-							<rect x="30" y="30" width="40" height="40" fill="white" />
-							<rect x="40" y="40" width="20" height="20" />
+		<!-- Title and Message -->
+		<div class="connecting-info">
+			<h3 id="wallet-connecting-title" class="connecting-title">{displayMessage}</h3>
 
-							<rect x="120" y="20" width="60" height="60" rx="4" />
-							<rect x="130" y="30" width="40" height="40" fill="white" />
-							<rect x="140" y="40" width="20" height="20" />
+			{#if mode === 'walletconnect'}
+				<p class="connecting-subtitle">Use your phone camera or copy the link to connect</p>
+			{:else}
+				<p class="connecting-subtitle">请在弹出的窗口中确认连接</p>
 
-							<rect x="20" y="120" width="60" height="60" rx="4" />
-							<rect x="30" y="130" width="40" height="40" fill="white" />
-							<rect x="40" y="140" width="20" height="20" />
-
-							<!-- Random pattern for demo -->
-							<rect x="90" y="30" width="10" height="10" />
-							<rect x="90" y="50" width="10" height="10" />
-							<rect x="100" y="40" width="10" height="10" />
-							<rect x="90" y="90" width="10" height="10" />
-							<rect x="110" y="90" width="10" height="10" />
-							<rect x="100" y="100" width="10" height="10" />
-							<rect x="90" y="110" width="10" height="10" />
-							<rect x="130" y="90" width="10" height="10" />
-							<rect x="140" y="100" width="10" height="10" />
-							<rect x="150" y="90" width="10" height="10" />
-						</g>
-					</svg>
-
-					<!-- WalletConnect logo overlay -->
-					<div class="qr-logo">
-						<svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-							<rect width="40" height="40" rx="8" fill="white" />
-							<rect x="4" y="4" width="32" height="32" rx="6" fill="#3B99FC" />
-							<path
-								d="M12.2 14.8C15.3 11.7 20.3 11.7 23.5 14.8L23.9 15.2C24.1 15.4 24.1 15.7 23.9 15.9L22.6 17.2C22.5 17.3 22.3 17.3 22.2 17.2L21.7 16.7C19.5 14.5 16.1 14.5 14 16.7L13.4 17.3C13.3 17.4 13.1 17.4 13 17.3L11.7 16C11.5 15.8 11.5 15.5 11.7 15.3L12.2 14.8ZM25.9 17.2L27 18.3C27.2 18.5 27.2 18.8 27 19L22.1 23.9C21.9 24.1 21.6 24.1 21.4 23.9L18 20.5C18 20.4 17.9 20.4 17.8 20.5L14.4 23.9C14.2 24.1 13.9 24.1 13.7 23.9L8.8 19C8.6 18.8 8.6 18.5 8.8 18.3L9.9 17.2C10.1 17 10.4 17 10.6 17.2L14 20.6C14.1 20.7 14.2 20.7 14.3 20.6L17.7 17.2C17.9 17 18.2 17 18.4 17.2L21.8 20.6C21.9 20.7 22 20.7 22.1 20.6L25.5 17.2C25.7 17 26 17 25.9 17.2Z"
-								fill="white"
-							/>
-						</svg>
+				<!-- Beautiful loading spinner below the message -->
+				<div class="loading-indicator">
+					<div class="pulse-loader">
+						<span></span>
+						<span></span>
+						<span></span>
 					</div>
 				</div>
-			</div>
-
-			<button class="copy-button" onclick={copyUri}>
-				{#if copied}
-					✓ 已复制
-				{:else}
-					复制连接链接
-				{/if}
-			</button>
-		{:else}
-			<!-- Default Mode -->
-			{#if walletIcon}
-				{#if walletIcon.startsWith('<svg')}
-					<div class="connecting-icon">
-						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-						{@html walletIcon}
-					</div>
-				{:else}
-					<img src={walletIcon} alt={walletName} class="connecting-icon" />
-				{/if}
 			{/if}
+		</div>
 
-			<h3 class="connecting-title">{displayMessage}</h3>
-			<p class="connecting-subtitle">{subMessage}</p>
+		<!-- WalletConnect QR Code -->
+		{#if mode === 'walletconnect'}
+			<div class="qr-container">
+				{#if walletConnectUri}
+					<div class="qr-wrapper">
+						<QRCode data={walletConnectUri} size={248} />
+					</div>
 
-			<div class="connecting-spinner">
-				<div class="spinner-ring"></div>
+					<!-- Copy Link Button -->
+					<button
+						class="copy-button"
+						class:copied={copyFeedback}
+						onclick={handleCopy}
+						aria-label={copyFeedback ? 'Link copied!' : 'Copy link'}
+					>
+						{#if copyFeedback}
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+								<path
+									d="M13.5 4.5L6 12L2.5 8.5"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									fill="none"
+								/>
+							</svg>
+						{:else}
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+								<rect x="5.5" y="5.5" width="8" height="8" rx="1" stroke="currentColor" />
+								<path
+									d="M3.5 10.5V3.5C3.5 2.94772 3.94772 2.5 4.5 2.5H11.5"
+									stroke="currentColor"
+								/>
+							</svg>
+						{/if}
+						<span>Copy Link</span>
+					</button>
+				{:else}
+					<!-- Loading state -->
+					<div class="qr-loading">
+						<div class="loading-spinner">
+							<div class="spinner-ring"></div>
+						</div>
+						<p class="loading-text">Initializing...</p>
+					</div>
+				{/if}
 			</div>
 		{/if}
 
+		<!-- Error or Retry Message -->
+		{#if errorMessage}
+			<div class="error-info">
+				<p class="error-text">{errorMessage}</p>
+				{#if onRetry}
+					<button class="retry-button" onclick={onRetry}>
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+							<path
+								d="M2 8C2 4.68629 4.68629 2 8 2C10.0833 2 11.9167 3.08333 13 4.66667L14 6M14 8C14 11.3137 11.3137 14 8 14C5.91667 14 4.08333 12.9167 3 11.3333L2 10"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+							<polyline
+								points="2 4 2 6 4 6"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+							<polyline
+								points="12 10 14 10 14 12"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+						<span>重试连接</span>
+					</button>
+				{/if}
+			</div>
+		{:else if mode === 'default'}
+			<div class="retry-info">
+				<p class="retry-text">
+					没有弹出窗口？
+					<button class="retry-link" onclick={() => window.location.reload()}> 点击重试 </button>
+				</p>
+			</div>
+		{/if}
+
+		<!-- Cancel Button -->
 		{#if onCancel}
-			<button class="cancel-button" onclick={onCancel}> 取消 </button>
+			<button class="cancel-button" onclick={onCancel}> 取消连接 </button>
 		{/if}
 	</div>
 </div>
 
 <style>
 	.wallet-connecting {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		min-height: 400px;
-		padding: var(--space-8);
+		width: 100%;
+		max-width: 400px;
+		margin: 0 auto;
+		padding: var(--space-6);
+		background: var(--color-background);
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--color-border);
+		outline: none;
 	}
 
 	.connecting-content {
@@ -139,46 +224,59 @@
 		flex-direction: column;
 		align-items: center;
 		gap: var(--space-4);
-		text-align: center;
-		max-width: 280px;
-		width: 100%;
 	}
 
-	.connecting-icon {
-		width: 80px;
-		height: 80px;
-		border-radius: var(--radius-lg);
-		overflow: hidden;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-background);
-		border: 1px solid var(--color-border);
-		padding: var(--space-3);
+	.wallet-icon-container {
 		margin-bottom: var(--space-2);
-		object-fit: contain;
 	}
 
-	.connecting-icon :global(svg) {
-		width: 100%;
-		height: 100%;
+	.connecting-info {
+		text-align: center;
+		margin-bottom: var(--space-4);
 	}
 
 	.connecting-title {
-		margin: 0;
-		font-size: var(--text-lg);
+		font-size: var(--text-xl);
 		font-weight: var(--font-semibold);
-		color: var(--color-foreground);
+		color: var(--color-heading-1);
+		margin: 0 0 var(--space-2) 0;
 	}
 
 	.connecting-subtitle {
-		margin: 0;
 		font-size: var(--text-sm);
 		color: var(--color-muted-foreground);
+		margin: 0;
 	}
 
-	.connecting-spinner {
-		margin: var(--space-4) 0;
+	.qr-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-4);
+		width: 100%;
+	}
+
+	.qr-wrapper {
+		padding: var(--space-3);
+		background: var(--color-panel-1);
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--color-border);
+	}
+
+	.qr-loading {
+		width: 280px;
+		height: 280px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-4);
+		background: var(--color-panel-1);
+		border-radius: var(--radius-xl);
+		border: 1px solid var(--color-border);
+	}
+
+	.loading-spinner {
 		width: 48px;
 		height: 48px;
 		position: relative;
@@ -187,7 +285,7 @@
 	.spinner-ring {
 		width: 100%;
 		height: 100%;
-		border: 3px solid var(--color-border);
+		border: 3px solid var(--color-muted);
 		border-top-color: var(--color-primary);
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
@@ -199,98 +297,173 @@
 		}
 	}
 
-	.cancel-button {
-		padding: var(--space-2) var(--space-4);
+	.loading-text {
+		font-size: var(--text-sm);
+		color: var(--color-muted-foreground);
+		margin: 0;
+	}
+
+	.copy-button {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-3) var(--space-4);
 		background: transparent;
 		color: var(--color-muted-foreground);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius);
 		font-size: var(--text-sm);
+		font-weight: var(--font-medium);
 		cursor: pointer;
 		transition: all 150ms ease;
-		margin-top: var(--space-2);
 	}
 
-	.cancel-button:hover {
+	.copy-button:hover {
 		background: var(--color-muted);
-		color: var(--color-foreground);
 		border-color: var(--color-border-hover);
+		color: var(--color-foreground);
 	}
 
-	/* WalletConnect QR Code styles */
-	.qr-container {
-		position: relative;
-		width: 280px;
-		height: 280px;
-		background: white;
-		border-radius: var(--radius-lg);
-		padding: var(--space-4);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-		margin: var(--space-4) 0;
+	.copy-button.copied {
+		color: var(--color-success);
+		border-color: var(--color-success);
 	}
 
-	.qr-code {
-		position: relative;
-		width: 100%;
-		height: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	.copy-button.copied svg {
+		color: var(--color-success);
 	}
 
-	.qr-placeholder {
-		width: 100%;
-		height: 100%;
-	}
-
-	.qr-logo {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 40px;
-		height: 40px;
-		background: white;
+	.error-info {
+		margin-top: var(--space-3);
+		padding: var(--space-3);
+		background: rgba(239, 68, 68, 0.05);
+		border: 1px solid rgba(239, 68, 68, 0.2);
 		border-radius: var(--radius);
-		padding: 2px;
+		text-align: center;
 	}
 
-	.copy-button {
-		padding: var(--space-3) var(--space-6);
+	:global([data-theme='dark']) .error-info {
+		background: rgba(239, 68, 68, 0.1);
+		border-color: rgba(239, 68, 68, 0.3);
+	}
+
+	.error-text {
+		font-size: var(--text-sm);
+		color: var(--color-danger);
+		margin: 0 0 var(--space-2) 0;
+		line-height: 1.5;
+	}
+
+	.retry-button {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
 		background: var(--color-primary);
-		color: white;
+		color: var(--color-primary-foreground);
 		border: none;
 		border-radius: var(--radius);
 		font-size: var(--text-sm);
 		font-weight: var(--font-medium);
 		cursor: pointer;
 		transition: all 150ms ease;
-		min-width: 140px;
 	}
 
-	.copy-button:hover {
+	.retry-button:hover {
 		opacity: 0.9;
 		transform: translateY(-1px);
 	}
 
-	.copy-button:active {
-		transform: translateY(0);
+	.retry-info {
+		margin-top: var(--space-2);
+		text-align: center;
 	}
 
-	/* Mobile responsive */
+	.retry-text {
+		font-size: var(--text-sm);
+		color: var(--color-muted-foreground);
+		margin: 0;
+	}
+
+	.retry-link {
+		color: var(--color-primary);
+		background: none;
+		border: none;
+		padding: 0;
+		font-size: inherit;
+		cursor: pointer;
+		text-decoration: underline;
+	}
+
+	.retry-link:hover {
+		opacity: 0.8;
+	}
+
+	.cancel-button {
+		width: 100%;
+		padding: var(--space-3);
+		background: var(--color-muted);
+		color: var(--color-foreground);
+		border: none;
+		border-radius: var(--radius);
+		font-size: var(--text-sm);
+		font-weight: var(--font-medium);
+		cursor: pointer;
+		transition: all 150ms ease;
+		margin-top: var(--space-2);
+	}
+
+	.cancel-button:hover {
+		background: var(--color-muted-foreground);
+		color: var(--color-background);
+	}
+
+	/* Beautiful loading indicator */
+	.loading-indicator {
+		margin-top: var(--space-4);
+		display: flex;
+		justify-content: center;
+	}
+
+	.pulse-loader {
+		display: flex;
+		gap: var(--space-2);
+	}
+
+	.pulse-loader span {
+		display: inline-block;
+		width: 12px;
+		height: 12px;
+		background: var(--color-primary);
+		border-radius: 50%;
+		animation: pulse 1.4s ease-in-out infinite;
+	}
+
+	.pulse-loader span:nth-child(1) {
+		animation-delay: -0.32s;
+	}
+
+	.pulse-loader span:nth-child(2) {
+		animation-delay: -0.16s;
+	}
+
+	@keyframes pulse {
+		0%,
+		80%,
+		100% {
+			transform: scale(0.8);
+			opacity: 0.5;
+		}
+		40% {
+			transform: scale(1.2);
+			opacity: 1;
+		}
+	}
+
 	@media (max-width: 640px) {
 		.wallet-connecting {
-			min-height: 320px;
-			padding: var(--space-6);
-		}
-
-		.connecting-icon {
-			width: 64px;
-			height: 64px;
-		}
-
-		.connecting-title {
-			font-size: var(--text-base);
+			max-width: 100%;
+			border-radius: var(--radius-lg);
 		}
 	}
 </style>
