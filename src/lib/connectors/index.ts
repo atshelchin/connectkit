@@ -50,7 +50,7 @@ export {
 	isConnecting$,
 	address$,
 	chainId$
-} from './store.js';
+} from './store.svelte.js';
 
 // Export configuration helper
 export { configureConnectKit, getChainById, formatChainName } from './config.js';

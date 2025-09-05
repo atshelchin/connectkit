@@ -5,9 +5,10 @@ import {
 	createEIP6963Connector,
 	createCoinbaseConnector,
 	createWalletConnectConnector
-} from './store.js';
+} from './store.svelte.js';
 import { watchEIP6963Wallets } from './eip6963.js';
-import type { Connector, WalletStore } from './types.js';
+import type { Connector } from './types.js';
+import type { WalletStore } from './store.svelte.js';
 
 /**
  * Configuration options for ConnectKit
