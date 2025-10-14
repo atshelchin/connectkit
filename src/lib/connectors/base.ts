@@ -115,12 +115,12 @@ export abstract class BaseConnector implements Connector {
 	 */
 	protected emit<K extends keyof ConnectorEvents>(
 		event: K,
-		...args: Parameters<ConnectorEvents[K]>
+		...args: ConnectorEvents[K] extends (...args: infer P) => void ? P : never
 	): void {
 		const listeners = this.listeners.get(event);
 		if (listeners) {
 			listeners.forEach((listener) => {
-				listener(...args);
+				(listener as (...args: unknown[]) => void)(...args);
 			});
 		}
 	}
@@ -139,7 +139,7 @@ export abstract class BaseConnector implements Connector {
 		return createWalletClient({
 			chain,
 			account,
-			transport: custom(provider as ReturnType<typeof window.ethereum>)
+			transport: custom(provider as never)
 		});
 	}
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Address } from 'viem';
 	import Modal from './modal.svelte';
 	import EthereumIdentity from './ethereum-identity.svelte';
 	import NetworkSelector from './network-selector.svelte';
@@ -24,7 +25,6 @@
 		onChainSwitch?: (chainId: number) => void;
 		onAccountSwitch?: (address: string) => void;
 		onSignMessage?: (message: string) => Promise<string>;
-		mainnet?: boolean;
 	}
 
 	let {
@@ -37,8 +37,8 @@
 		onDisconnect,
 		onChainSwitch,
 		onAccountSwitch,
-		onSignMessage,
-		mainnet = false
+		onSignMessage
+		// mainnet = false
 	}: Props = $props();
 
 	let isSignedIn = $state(false);
@@ -52,7 +52,6 @@
 
 	// Track chain for reverting on failure - initialize with current chainId
 	let displayedChainId = $state(chainId || 1);
-	let targetChainId = $state<number | null>(null);
 
 	// Update displayed chain when actual chain changes successfully
 	$effect(() => {
@@ -66,7 +65,7 @@
 	// Check SIWE session on mount and when address changes
 	$effect(() => {
 		if (address) {
-			isSignedIn = hasValidSIWESession(address);
+			isSignedIn = hasValidSIWESession(address as Address);
 		}
 	});
 
@@ -81,7 +80,7 @@
 			const expirationTime = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
 
 			const message = createSIWEMessage({
-				address,
+				address: address as Address,
 				chainId,
 				domain,
 				nonce,
@@ -92,7 +91,7 @@
 			const signature = await onSignMessage(message);
 
 			const session: SIWESession = {
-				address,
+				address: address as Address,
 				chainId,
 				signature,
 				message,
@@ -163,7 +162,6 @@
 
 		switchError = undefined;
 		isSwitchingChain = true;
-		targetChainId = newTargetChainId;
 		switchFeedback = 'loading';
 		switchFeedbackMessage = '切换中...';
 
@@ -175,7 +173,6 @@
 			// Success - the actual chainId will update via props
 			switchFeedback = 'success';
 			switchFeedbackMessage = '切换成功';
-			targetChainId = null;
 			// Auto-hide success after 2 seconds
 			setTimeout(() => {
 				switchFeedback = null;
@@ -221,7 +218,6 @@
 				switchFeedbackMessage = errorMsg;
 			}
 
-			targetChainId = null;
 			switchError = errorMsg;
 
 			// Auto-hide error after 5 seconds
@@ -232,7 +228,6 @@
 			isSwitchingChain = false;
 		}
 	}
-	console.log({ targetChainId });
 </script>
 
 <Modal {open} {onClose}>
@@ -263,11 +258,10 @@
 				<div class="avatar-container">
 					<EthereumIdentity
 						{address}
-						{mainnet}
 						showAvatar={true}
 						showAddress={false}
 						avatarSize="lg"
-						showCopy={false}
+						copyOnClick={false}
 					/>
 				</div>
 
@@ -311,11 +305,10 @@
 										>
 											<EthereumIdentity
 												address={addr}
-												{mainnet}
 												showAvatar={true}
 												showAddress={true}
 												avatarSize="sm"
-												showCopy={false}
+												copyOnClick={false}
 											/>
 											{#if addr === address}
 												<svg
@@ -440,7 +433,7 @@
 				onclick={() => {
 					// Clear SIWE session when disconnecting
 					if (address) {
-						clearSIWESession(address);
+						clearSIWESession(address as Address);
 					}
 					onDisconnect?.();
 					onClose();
@@ -658,15 +651,6 @@
 		opacity: 1;
 	}
 
-	.selector-label {
-		color: var(--color-muted-foreground);
-		font-size: var(--text-xs);
-	}
-
-	.selector-value {
-		font-weight: var(--font-medium);
-	}
-
 	.selector-chevron {
 		transition: transform 150ms ease;
 	}
@@ -771,30 +755,9 @@
 		transition: all 150ms ease;
 	}
 
-	.sign-out-btn {
-		margin-left: auto;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 28px;
-		height: 28px;
-		padding: 0;
-		background: transparent;
-		color: var(--color-muted-foreground);
-		border: none;
-		border-radius: var(--radius);
-		cursor: pointer;
-		transition: all 150ms ease;
-	}
-
 	.sign-in-btn:hover:not(:disabled) {
 		opacity: 0.9;
 		transform: translateY(-1px);
-	}
-
-	.sign-out-btn:hover {
-		background: var(--color-muted);
-		color: var(--color-destructive, #dc2626);
 	}
 
 	.sign-in-btn:disabled {

@@ -25,7 +25,7 @@ export type {
 } from './types.js';
 
 export { ConnectorType } from './types.js';
-export type { WalletStore } from './store.js';
+export type { WalletStore } from './store.svelte.js';
 
 // Export base classes
 export { BaseConnector } from './base.js';

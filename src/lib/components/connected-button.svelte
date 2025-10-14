@@ -8,17 +8,9 @@
 		onClick?: () => void;
 		className?: string;
 		showBalance?: boolean;
-		mainnet?: boolean;
 	}
 
-	let {
-		address,
-		balance,
-		onClick,
-		className = '',
-		showBalance = true,
-		mainnet = false
-	}: Props = $props();
+	let { address, balance, onClick, className = '', showBalance = true }: Props = $props();
 
 	// Button ref to get parent container width
 	let buttonRef: HTMLButtonElement;
@@ -72,11 +64,10 @@
 		<!-- Use EthereumIdentity for avatar and address display -->
 		<EthereumIdentity
 			{address}
-			{mainnet}
 			showAvatar={true}
 			showAddress={displayMode !== 'avatar-only'}
 			avatarSize="xs"
-			showCopy={false}
+			copyOnClick={false}
 		/>
 
 		<!-- Dropdown indicator for full mode -->

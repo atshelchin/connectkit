@@ -17,7 +17,8 @@
 			{ chainId: 42161, name: 'Arbitrum', symbol: 'ETH' },
 			{ chainId: 56, name: 'BNB Chain', symbol: 'BNB' },
 			{ chainId: 43114, name: 'Avalanche', symbol: 'AVAX' },
-			{ chainId: 8453, name: 'Base', symbol: 'ETH' }
+			{ chainId: 8453, name: 'Base', symbol: 'ETH' },
+			{ chainId: 648, name: 'Endurance', symbol: 'ACE' }
 		]
 	}: Props = $props();
 

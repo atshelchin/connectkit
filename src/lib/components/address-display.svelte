@@ -58,7 +58,7 @@
 	const isAddress = $derived(!ensName);
 
 	// Tooltip text
-	const tooltipText = $derived(() => {
+	const tooltipText = $derived.by(() => {
 		if (!showTooltip) return '';
 		if (ensName) {
 			return `${ensName}\n${address}`;
@@ -91,45 +91,46 @@
 			console.error('Failed to copy address:', err);
 		}
 	}
-
-	// Handle keyboard copy
-	function handleKeyDown(e: KeyboardEvent) {
-		if (copyOnClick && (e.key === 'Enter' || e.key === ' ')) {
-			e.preventDefault();
-			handleCopy(new MouseEvent('click'));
-		}
-	}
 </script>
 
-<div
-	class="address-display address-display--{size} {className}"
-	class:clickable={copyOnClick}
-	class:copied
-	onclick={handleCopy}
-	onkeydown={handleKeyDown}
-	role={copyOnClick ? 'button' : undefined}
-	tabindex={copyOnClick ? 0 : undefined}
-	title={tooltipText}
-	aria-label={copyOnClick ? `Copy address: ${address}` : address}
->
-	<span class="address-text" class:monospace={isAddress} class:ens-name={!isAddress}>
-		{displayText}
-	</span>
+{#if copyOnClick}
+	<button
+		type="button"
+		class="address-display address-display--{size} {className} clickable"
+		class:copied
+		onclick={handleCopy}
+		title={tooltipText}
+		aria-label={`Copy address: ${address}`}
+	>
+		<span class="address-text" class:monospace={isAddress} class:ens-name={!isAddress}>
+			{displayText}
+		</span>
 
-	{#if copyOnClick && showCopyIcon && !copied}
-		<svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-			<path
-				d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
-			/>
-		</svg>
-	{/if}
+		{#if showCopyIcon && !copied}
+			<svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+				<path
+					d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+				/>
+			</svg>
+		{/if}
 
-	{#if copied}
-		<svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-			<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-		</svg>
-	{/if}
-</div>
+		{#if copied}
+			<svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+				<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+			</svg>
+		{/if}
+	</button>
+{:else}
+	<div
+		class="address-display address-display--{size} {className}"
+		title={tooltipText}
+		aria-label={address}
+	>
+		<span class="address-text" class:monospace={isAddress} class:ens-name={!isAddress}>
+			{displayText}
+		</span>
+	</div>
+{/if}
 
 <style>
 	.address-display {
@@ -144,6 +145,10 @@
 		overflow: hidden; /* Prevent content from overflowing */
 		box-sizing: border-box;
 		padding-right: var(--space-1); /* Add padding to prevent icon from touching edge */
+		background: none;
+		border: none;
+		font: inherit;
+		text-align: left;
 	}
 
 	.address-display.clickable {
