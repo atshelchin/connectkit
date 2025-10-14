@@ -11,8 +11,8 @@
 
 	let { data, size = 248, logo, className = '' }: Props = $props();
 
-	let qrCodeContainer: HTMLDivElement;
-	let qrCodeInstance: unknown = null;
+	let qrCodeContainer = $state<HTMLDivElement>();
+	let qrCodeInstance = $state<unknown>(null);
 	let currentTheme = $state<string | null>(null);
 	let qrKey = $state(0); // Key to force re-render
 

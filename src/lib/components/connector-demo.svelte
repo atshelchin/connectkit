@@ -1,78 +1,109 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { configureConnectKit, type WalletStore, type Connector } from '../connectors/index.js';
+	import {
+		configureConnectKit,
+		type WalletStore,
+		type Connector,
+		type ConnectionState,
+		type EIP6963ProviderDetail
+	} from '../connectors/index.js';
 	import ConnectedButton from './connected-button.svelte';
 	import AccountModal from './account-modal.svelte';
 	import WalletList from './wallet-list.svelte';
 	import WalletConnecting from './wallet-connecting.svelte';
+	import SubscriptionDisplay from './subscription-display.svelte';
 	import { mainnet, polygon, optimism, arbitrum, base } from 'viem/chains';
+	import { fusionistEndurance } from '../config/chains/fusionist-endurance.js';
+	import type { SubscriptionConfig } from '../types/subscription-config.js';
 
 	// State from the wallet store
-	let store: WalletStore;
+	let store = $state<WalletStore>() as WalletStore;
 	let isConnected = $state(false);
 	let isConnecting = $state(false);
 	let address = $state<string | undefined>(undefined);
 	let addresses = $state<string[] | undefined>(undefined);
 	let chainId = $state<number | undefined>(undefined);
 	let connectors = $state<Connector[]>([]);
-	interface EIP6963WalletInfo {
-		info: {
-			uuid: string;
-			name: string;
-			icon: string;
-			rdns: string;
-		};
-		provider: unknown;
-	}
-
-	let eip6963Wallets = $state<EIP6963WalletInfo[]>([]);
+	let eip6963Wallets = $state<EIP6963ProviderDetail[]>([]);
 
 	// UI state
 	let showWalletList = $state(false);
 	let showAccountModal = $state(false);
+	let showSubscription = $state(false);
 	let connectingWallet = $state<{ name: string; icon?: string } | null>(null);
 	let selectedConnector = $state<Connector | null>(null);
 	let walletConnectUri = $state<string | undefined>(undefined);
 	let errorMessage = $state<string | undefined>(undefined);
 
+	// Subscription configuration
+	const subscriptionConfig: SubscriptionConfig = {
+		enabled: true,
+		networks: [
+			{
+				chainId: 648, // Fusionist Endurance
+				contractAddress: '0x8186c8F5e02a840ff66AC862f0C3F9599B9059D3' as `0x${string}`,
+				chain: fusionistEndurance,
+				tiers: [
+					{ value: 0, name: 'PRO', displayName: 'PRO 专业版' },
+					{ value: 1, name: 'MAX', displayName: 'MAX 旗舰版' }
+				],
+				periods: [
+					{ value: 0, name: 'MONTHLY', displayName: '月付', days: 30 },
+					{ value: 1, name: 'YEARLY', displayName: '年付 (优惠 17%)', days: 365 }
+				]
+			}
+			// Add more networks as needed
+		],
+		defaultTier: 0,
+		defaultPeriod: 0,
+		showReferrerInput: true,
+		bufferPercentage: 1
+	};
+
 	// Initialize the connector system
-	onMount(async () => {
-		const result = await configureConnectKit({
-			// Replace with your WalletConnect project ID
-			// This is a test project ID - replace with your own for production
-			walletConnectProjectId: 'e3928bd840eee588e157816acb2c8ad8',
-			appName: 'ConnectKit Demo',
-			appDescription: 'A demo of the ConnectKit connector system',
-			chains: [mainnet, polygon, optimism, arbitrum, base],
-			enabledConnectors: ['eip6963', 'coinbase', 'walletconnect'],
-			coinbasePreference: 'smartWalletOnly',
-			autoConnect: true
-		});
+	onMount(() => {
+		let unsubscribeState: (() => void) | undefined;
+		let unsubscribeConnectors: (() => void) | undefined;
+		let unsubscribeEIP6963: (() => void) | undefined;
 
-		store = result.store;
-		connectors = result.connectors;
+		(async () => {
+			const result = await configureConnectKit({
+				// Replace with your WalletConnect project ID
+				// This is a test project ID - replace with your own for production
+				walletConnectProjectId: 'e3928bd840eee588e157816acb2c8ad8',
+				appName: 'ConnectKit Demo',
+				appDescription: 'A demo of the ConnectKit connector system',
+				chains: [fusionistEndurance, mainnet, polygon, optimism, arbitrum, base],
+				enabledConnectors: ['eip6963', 'coinbase', 'walletconnect'],
+				coinbasePreference: 'smartWalletOnly',
+				autoConnect: true
+			});
 
-		// Subscribe to store changes
-		const unsubscribeState = store.state.subscribe((state) => {
-			isConnected = state.isConnected;
-			isConnecting = state.isConnecting;
-			address = state.address;
-			addresses = state.addresses;
-			chainId = state.chainId;
-		});
+			store = result.store;
+			connectors = result.connectors;
 
-		const unsubscribeConnectors = store.connectors.subscribe((c) => {
-			connectors = c;
-		});
+			// Subscribe to store changes
+			unsubscribeState = store.state.subscribe((state: ConnectionState) => {
+				isConnected = state.isConnected;
+				isConnecting = state.isConnecting;
+				address = state.address;
+				addresses = state.addresses;
+				chainId = state.chainId;
+			});
 
-		const unsubscribeEIP6963 = store.eip6963Wallets.subscribe((w) => {
-			eip6963Wallets = w;
-		});
+			unsubscribeConnectors = store.connectors.subscribe((c: Connector[]) => {
+				connectors = c;
+			});
+
+			unsubscribeEIP6963 = store.eip6963Wallets.subscribe((w: EIP6963ProviderDetail[]) => {
+				eip6963Wallets = w;
+			});
+		})();
 
 		return () => {
-			unsubscribeState();
-			unsubscribeConnectors();
-			unsubscribeEIP6963();
+			unsubscribeState?.();
+			unsubscribeConnectors?.();
+			unsubscribeEIP6963?.();
 		};
 	});
 
@@ -93,18 +124,18 @@
 		// Handle different wallet types
 		if (wallet.type === 'eip6963' && wallet.info) {
 			// Find existing connector or create new one for EIP6963 wallet
-			let connector = connectors.find((c) => c.id === `eip6963:${wallet.info.rdns}`);
+			let connector = connectors.find((c) => c.id === `eip6963:${wallet.info!.rdns}`);
 
 			if (!connector) {
 				// Find the actual EIP6963 wallet detail from the store
-				const walletDetail = eip6963Wallets.find((w) => w.info.rdns === wallet.info.rdns);
+				const walletDetail = eip6963Wallets.find((w) => w.info.rdns === wallet.info!.rdns);
 
 				if (walletDetail) {
 					// Dynamically import and create the connector
 					const { EIP6963Connector } = await import('../connectors/eip6963.js');
 					connector = new EIP6963Connector({
 						providerDetail: walletDetail,
-						chains: [mainnet, polygon, optimism, arbitrum, base]
+						chains: [fusionistEndurance, mainnet, polygon, optimism, arbitrum, base]
 					});
 
 					// Register the new connector with the store
@@ -266,8 +297,26 @@
 			<div class="connected-state">
 				<ConnectedButton {address} balance="0.0" onClick={() => (showAccountModal = true)} />
 				<p class="status">
-					已连接到链 ID: {chainId}
+					已连接到：{chainId === 648
+						? 'Fusionist Endurance (测试网)'
+						: chainId === 1
+							? 'Ethereum 主网'
+							: chainId === 137
+								? 'Polygon'
+								: chainId === 10
+									? 'Optimism'
+									: chainId === 42161
+										? 'Arbitrum'
+										: chainId === 8453
+											? 'Base'
+											: `链 ID: ${chainId}`}
 				</p>
+				<button class="subscription-btn" onclick={() => (showSubscription = true)}>
+					查看订阅
+				</button>
+				{#if chainId !== 648}
+					<p class="network-hint">提示：切换到 Fusionist Endurance 测试网进行测试</p>
+				{/if}
 			</div>
 		{/if}
 
@@ -293,6 +342,32 @@
 				throw new Error('Store not initialized');
 			}}
 		/>
+
+		<!-- Subscription Modal -->
+		{#if showSubscription && store && chainId}
+			<div
+				class="modal-overlay"
+				role="dialog"
+				aria-modal="true"
+				tabindex="-1"
+				onclick={() => (showSubscription = false)}
+				onkeydown={(e) => e.key === 'Escape' && (showSubscription = false)}
+			>
+				<button
+					type="button"
+					class="modal-content"
+					onclick={(e) => e.stopPropagation()}
+					onkeydown={(e) => e.stopPropagation()}
+				>
+					<SubscriptionDisplay
+						walletStore={store}
+						config={subscriptionConfig}
+						{chainId}
+						onClose={() => (showSubscription = false)}
+					/>
+				</button>
+			</div>
+		{/if}
 	</div>
 
 	<div class="info-section">
@@ -426,6 +501,49 @@ const { isConnected, address, connect, disconnect } = store;`}</code
 	.status {
 		font-size: var(--text-sm);
 		color: var(--color-muted-foreground);
+	}
+
+	.subscription-btn {
+		padding: var(--space-2) var(--space-4);
+		background: var(--color-secondary);
+		color: var(--color-secondary-foreground);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		font-weight: var(--font-medium);
+		cursor: pointer;
+		transition: all 200ms ease;
+	}
+
+	.subscription-btn:hover {
+		background: var(--color-primary);
+		color: var(--color-primary-foreground);
+	}
+
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		padding: var(--space-4);
+	}
+
+	.modal-content {
+		width: 100%;
+		max-width: 600px;
+		max-height: 90vh;
+		overflow-y: auto;
+	}
+
+	.network-hint {
+		font-size: var(--text-sm);
+		color: var(--color-warning);
+		background: var(--color-panel-accent);
+		padding: var(--space-2) var(--space-3);
+		border-radius: var(--radius);
+		margin-top: var(--space-2);
 	}
 
 	.info-section {

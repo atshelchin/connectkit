@@ -450,10 +450,6 @@
 		background: #3b99fc;
 	}
 
-	.icon-placeholder.metamask {
-		background: #f6851b;
-	}
-
 	.live-states {
 		display: flex;
 		flex-direction: column;
@@ -483,47 +479,5 @@
 		color: var(--color-muted-foreground);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-	}
-
-	.discovering {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-		color: var(--color-muted-foreground);
-		font-size: var(--text-sm);
-	}
-
-	.spinner {
-		width: 20px;
-		height: 20px;
-		border: 2px solid var(--color-border);
-		border-top-color: var(--color-primary);
-		border-radius: 50%;
-		animation: spin 0.8s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
-	.no-wallets {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-		text-align: center;
-	}
-
-	.no-wallets p {
-		margin: 0;
-		font-size: var(--text-sm);
-		font-weight: var(--font-medium);
-		color: var(--color-foreground);
-	}
-
-	.hint {
-		font-size: var(--text-xs);
-		color: var(--color-muted-foreground);
 	}
 </style>

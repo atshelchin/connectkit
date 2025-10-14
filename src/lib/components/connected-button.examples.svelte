@@ -66,8 +66,10 @@
 			handleWalletSelect({
 				type: 'eip6963',
 				info: {
+					uuid: 'metamask-demo',
 					name: 'MetaMask',
-					icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iI0Y2ODUxQiIvPgo8cGF0aCBkPSJNMzAuNCAxMS42TDIxLjYgMTguMUwyMy4zIDE0LjFMMzAuNCAxMS42WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTkuNiAxMS42TDE4LjMgMTguMkwxNi43IDE0LjFMOS42IDExLjZaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMjYuNyAyNC40TDI0LjMgMjguMkwyOS40IDI5LjZMMzAuOSAyNC41TDI2LjcgMjQuNFoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik05LjEgMjQuNUwxMC42IDI5LjZMMTUuNyAyOC4yTDEzLjMgMjQuNEw5LjEgMjQuNVoiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPg=='
+					icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iI0Y2ODUxQiIvPgo8cGF0aCBkPSJNMzAuNCAxMS42TDIxLjYgMTguMUwyMy4zIDE0LjFMMzAuNCAxMS42WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTkuNiAxMS42TDE4LjMgMTguMkwxNi43IDE0LjFMOS42IDExLjZaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMjYuNyAyNC40TDI0LjMgMjguMkwyOS40IDI5LjZMMzAuOSAyNC41TDI2LjcgMjQuNFoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik05LjEgMjQuNUwxMC42IDI5LjZMMTUuNyAyOC4yTDEzLjMgMjQuNEw5LjEgMjQuNVoiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPg==',
+					rdns: 'io.metamask'
 				}
 			});
 		}, 2000);
@@ -229,7 +231,6 @@
 				<ConnectedButton
 					address="0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
 					balance="123.45"
-					mainnet={true}
 					onClick={() => console.log('Vitalik')}
 				/>
 			</div>

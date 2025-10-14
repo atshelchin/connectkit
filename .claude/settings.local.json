@@ -1,7 +1,17 @@
 {
-	"permissions": {
-		"allow": ["Bash(bun run:*)", "Bash(npm run check:*)"],
-		"deny": [],
-		"ask": []
-	}
+  "permissions": {
+    "allow": [
+      "Bash(bun run:*)",
+      "Bash(npm run check:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npm run lint)",
+      "Bash(npm run format:*)",
+      "Bash(tree:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
 }

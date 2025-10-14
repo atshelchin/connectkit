@@ -252,13 +252,6 @@
 		gap: var(--space-8);
 	}
 
-	h2 {
-		margin: 0;
-		font-size: var(--text-2xl);
-		font-weight: var(--font-semibold);
-		color: var(--color-heading-1);
-	}
-
 	section {
 		display: flex;
 		flex-direction: column;

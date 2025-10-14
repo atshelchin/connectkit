@@ -88,11 +88,11 @@ export class WalletConnectConnector extends BaseConnector {
 				this.uri = uri;
 
 				// 总是发送 display_uri 事件以保持兼容性
-				this.emit('display_uri', uri);
+				(this.emit as (event: string, ...args: string[]) => void)('display_uri', uri);
 
 				// 在移动端额外发送 mobile_wallet_selection 事件
 				if (isMobile()) {
-					this.emit('mobile_wallet_selection', uri);
+					(this.emit as (event: string, ...args: string[]) => void)('mobile_wallet_selection', uri);
 				}
 			});
 

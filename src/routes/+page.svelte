@@ -87,17 +87,6 @@
 		gap: var(--space-4);
 	}
 
-	.link {
-		color: var(--color-primary);
-		text-decoration: none;
-		font-weight: var(--font-medium);
-		transition: opacity 150ms ease;
-	}
-
-	.link:hover {
-		opacity: 0.8;
-	}
-
 	.component-section {
 		margin-bottom: var(--space-16);
 	}
