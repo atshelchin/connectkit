@@ -1,0 +1,84 @@
+name: Publish Release Package
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  publish-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run type check
+        run: bun run check
+
+      - name: Run linter
+        run: bun run lint
+
+      - name: Run tests
+        run: bun run test
+
+      - name: Build package
+        run: bun run prepack
+
+      - name: Set release version
+        run: |
+          # Extract version from tag (remove 'v' prefix)
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Publishing release version: ${TAG_VERSION}"
+
+          # Update package.json version
+          npm version $TAG_VERSION --no-git-tag-version
+
+      - name: Publish to npm with latest tag
+        run: npm publish --tag latest --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Release version ${{ github.ref }}
+
+            ## Installation
+
+            ```bash
+            npm install @shelchin/connectkit@latest
+            # or
+            bun add @shelchin/connectkit@latest
+            # specific version
+            npm install @shelchin/connectkit@${{ github.ref_name }}
+            ```
+
+            ## Changes
+
+            See [CHANGELOG.md](CHANGELOG.md) for details.
+          draft: false
+          prerelease: false
+
+      - name: Output published version
+        run: |
+          PUBLISHED_VERSION=$(node -p "require('./package.json').version")
+          echo "✅ Published @shelchin/connectkit@${PUBLISHED_VERSION}"
+          echo "📦 Install with: npm install @shelchin/connectkit"
