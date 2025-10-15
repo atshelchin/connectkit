@@ -1,26 +1,76 @@
 <script lang="ts">
 	import ChainIcon from './chain-icon.svelte';
+	import RpcEditModal from './rpc-edit-modal.svelte';
+	import NetworkManagementModal from './network-management-modal.svelte';
+	import {
+		networkConfigStore,
+		type NetworkConfig,
+		type RpcEndpoint
+	} from '$lib/stores/network-config.svelte';
+	import type { StoredNetworkConfig } from '$lib/stores/network-config.svelte';
+
+	// 验证结果
+	// interface ValidationResult {
+	// 	valid: boolean;
+	// 	error?: string;
+	// 	warning?: string;
+	// 	canProceed?: boolean;
+	// }
+
+	// 网络验证器类型
+	// type NetworkValidator = (
+	// 	network: NetworkConfig,
+	// 	context: {
+	// 		currentChainId?: number;
+	// 		connectedWallet?: string;
+	// 		existingNetworks: NetworkConfig[];
+	// 		namespace: string;
+	// 	}
+	// ) => Promise<ValidationResult>;
 
 	interface Props {
+		// 必填
+		namespace: string;
 		chainId?: number;
 		onChainSwitch?: (chainId: number) => void;
-		supportedNetworks?: Array<{ chainId: number; name: string; symbol: string }>;
+
+		// 初始化配置（可选）
+		defaultEnabledChainIds?: number[];
+
+		// 验证器
+		// networkValidators?: NetworkValidator[];
+
+		// 功能开关
+		allowRpcEdit?: boolean;
+		allowCustomNetworks?: boolean;
+		allowNetworkManagement?: boolean;
+
+		// 回调
+		onNetworkConfigChange?: (config: StoredNetworkConfig) => void;
 	}
 
 	let {
+		namespace,
 		chainId = 1,
 		onChainSwitch,
-		supportedNetworks = [
-			{ chainId: 1, name: 'Ethereum', symbol: 'ETH' },
-			{ chainId: 137, name: 'Polygon', symbol: 'MATIC' },
-			{ chainId: 10, name: 'Optimism', symbol: 'ETH' },
-			{ chainId: 42161, name: 'Arbitrum', symbol: 'ETH' },
-			{ chainId: 56, name: 'BNB Chain', symbol: 'BNB' },
-			{ chainId: 43114, name: 'Avalanche', symbol: 'AVAX' },
-			{ chainId: 8453, name: 'Base', symbol: 'ETH' },
-			{ chainId: 648, name: 'Endurance', symbol: 'ACE' }
-		]
+		defaultEnabledChainIds,
+		// networkValidators = [],
+		allowRpcEdit = true,
+		allowCustomNetworks = true,
+		allowNetworkManagement = true,
+		onNetworkConfigChange
 	}: Props = $props();
+
+	// 初始化命名空间
+	if (typeof window !== 'undefined') {
+		networkConfigStore.initializeNamespace(namespace, defaultEnabledChainIds);
+	}
+
+	// 响应式：从 store 获取启用的网络列表
+	let enabledNetworks = $derived(networkConfigStore.getEnabledNetworks(namespace));
+	let allNetworks = $derived(networkConfigStore.getAllNetworks());
+	let enabledChainIds = $derived(enabledNetworks.map((n) => n.chainId));
+	let currentNetwork = $derived(networkConfigStore.getNetwork(chainId));
 
 	// Network dropdown state
 	let showNetworkDropdown = $state(false);
@@ -28,57 +78,52 @@
 	let dropdownStyle = $state('');
 	let networkButtonRef: HTMLButtonElement;
 
+	// Modal states
+	let showRpcEditModal = $state(false);
+	let showNetworkManagementModal = $state(false);
+
 	// Calculate dropdown position based on available space
 	function calculateDropdownPosition() {
 		if (!networkButtonRef) return;
 
 		const rect = networkButtonRef.getBoundingClientRect();
-		const dropdownHeight = Math.min(supportedNetworks.length * 40 + 16, 320); // Max 320px height
-		const dropdownWidth = 200; // Min width of dropdown
+		// 计算内容高度：网络列表 + 操作按钮区域
+		const networkListHeight = enabledNetworks.length * 40;
+		const actionsHeight = allowRpcEdit || allowNetworkManagement ? 100 : 0;
+		const dropdownHeight = Math.min(networkListHeight + actionsHeight + 16, 400);
+		const dropdownWidth = 240;
 
 		const viewportHeight = window.visualViewport?.height || window.innerHeight;
 		const viewportWidth = window.visualViewport?.width || window.innerWidth;
 
-		// Calculate available space in each direction
 		const spaceBelow = viewportHeight - rect.bottom;
 		const spaceAbove = rect.top;
 		const spaceRight = viewportWidth - rect.left;
 		const spaceLeft = rect.right;
 
-		// Determine vertical position
 		let useAbove = false;
 		let verticalPos = '';
 
-		// Check if there's enough space below
 		if (spaceBelow >= dropdownHeight) {
-			// Enough space below
 			verticalPos = `top: ${rect.bottom + 8}px;`;
 		} else if (spaceAbove >= dropdownHeight) {
-			// Not enough below, but enough above
 			useAbove = true;
 			verticalPos = `bottom: ${viewportHeight - rect.top + 8}px;`;
 		} else {
-			// Not enough space in either direction, use the direction with more space
 			if (spaceAbove > spaceBelow) {
 				useAbove = true;
-				// Position at top of viewport with some padding
 				verticalPos = `top: 8px; max-height: ${rect.top - 16}px;`;
 			} else {
-				// Position to use all available space below
 				verticalPos = `top: ${rect.bottom + 8}px; max-height: ${spaceBelow - 16}px;`;
 			}
 		}
 
-		// Determine horizontal position
 		let horizontalPos = '';
 		if (spaceRight >= dropdownWidth) {
-			// Align with left edge of button
 			horizontalPos = `left: ${rect.left}px; min-width: ${Math.min(dropdownWidth, spaceRight - 8)}px;`;
 		} else if (spaceLeft >= dropdownWidth) {
-			// Align with right edge of button
 			horizontalPos = `right: ${viewportWidth - rect.right}px; min-width: ${Math.min(dropdownWidth, spaceLeft - 8)}px;`;
 		} else {
-			// Center in viewport with padding
 			horizontalPos = `left: 8px; right: 8px;`;
 		}
 
@@ -93,6 +138,7 @@
 
 		if (networkChainId !== chainId) {
 			console.log('[NetworkSelector] Triggering chain switch...');
+			networkConfigStore.setCurrentNetwork(namespace, networkChainId);
 			onChainSwitch?.(networkChainId);
 		} else {
 			console.log('[NetworkSelector] Already on selected chain, no switch needed');
@@ -104,7 +150,6 @@
 	function toggleNetworkDropdown() {
 		showNetworkDropdown = !showNetworkDropdown;
 		if (showNetworkDropdown) {
-			// Small delay to ensure DOM is ready
 			requestAnimationFrame(() => {
 				calculateDropdownPosition();
 			});
@@ -124,6 +169,53 @@
 		if (showNetworkDropdown) {
 			calculateDropdownPosition();
 		}
+	}
+
+	// 打开修改 RPC Modal
+	function openRpcEditModal() {
+		showNetworkDropdown = false;
+		showRpcEditModal = true;
+	}
+
+	// 打开网络管理 Modal
+	function openNetworkManagementModal() {
+		showNetworkDropdown = false;
+		showNetworkManagementModal = true;
+	}
+
+	// 保存 RPC 配置
+	async function handleRpcSave(rpcEndpoints: RpcEndpoint[], blockExplorer?: string) {
+		networkConfigStore.updateNetworkRpc(chainId, rpcEndpoints, blockExplorer);
+		onNetworkConfigChange?.(networkConfigStore.getConfig());
+	}
+
+	// 启用/禁用网络
+	async function handleNetworkToggle(toggleChainId: number, enabled: boolean): Promise<boolean> {
+		const success = networkConfigStore.toggleNetwork(namespace, toggleChainId, enabled);
+		if (success) {
+			onNetworkConfigChange?.(networkConfigStore.getConfig());
+		}
+		return success;
+	}
+
+	// 添加自定义网络
+	async function handleNetworkAdd(network: NetworkConfig) {
+		networkConfigStore.addOrUpdateCustomNetwork(network);
+		// 自动启用新添加的网络
+		networkConfigStore.toggleNetwork(namespace, network.chainId, true);
+		onNetworkConfigChange?.(networkConfigStore.getConfig());
+	}
+
+	// 编辑网络
+	async function handleNetworkEdit(network: NetworkConfig) {
+		networkConfigStore.updateNetwork(network);
+		onNetworkConfigChange?.(networkConfigStore.getConfig());
+	}
+
+	// 删除自定义网络
+	async function handleNetworkRemove(removeChainId: number) {
+		networkConfigStore.removeCustomNetwork(removeChainId);
+		onNetworkConfigChange?.(networkConfigStore.getConfig());
 	}
 
 	$effect(() => {
@@ -167,8 +259,9 @@
 			class:dropdown-above={dropdownPosition === 'above'}
 			style={dropdownStyle}
 		>
+			<!-- 网络列表 -->
 			<div class="dropdown-content">
-				{#each supportedNetworks as network (network.chainId)}
+				{#each enabledNetworks as network (network.chainId)}
 					<button
 						class="network-option"
 						class:selected={network.chainId === chainId}
@@ -190,9 +283,75 @@
 					</button>
 				{/each}
 			</div>
+
+			<!-- 操作按钮区域 -->
+			{#if allowRpcEdit || allowNetworkManagement}
+				<div class="network-actions">
+					{#if allowRpcEdit}
+						<button class="action-button action-button-primary" onclick={openRpcEditModal}>
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+								<path
+									d="M3 13h10M7.5 3.5l5 5L6 15H3v-3l6.5-6.5z"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+							<span>修改 RPC</span>
+						</button>
+					{/if}
+
+					{#if allowNetworkManagement}
+						<button
+							class="action-button action-button-secondary"
+							onclick={openNetworkManagementModal}
+						>
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+								<path
+									d="M8 3v10M3 8h10"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
+							</svg>
+							<span>感兴趣的网络不在列表中？</span>
+						</button>
+					{/if}
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
+
+<!-- RPC 编辑 Modal -->
+{#if currentNetwork && showRpcEditModal}
+	<RpcEditModal
+		bind:open={showRpcEditModal}
+		onClose={() => (showRpcEditModal = false)}
+		networkName={currentNetwork.name}
+		chainId={currentNetwork.chainId}
+		rpcEndpoints={currentNetwork.rpcEndpoints}
+		blockExplorer={currentNetwork.blockExplorer}
+		onSave={handleRpcSave}
+	/>
+{/if}
+
+<!-- 网络管理 Modal -->
+{#if showNetworkManagementModal}
+	<NetworkManagementModal
+		bind:open={showNetworkManagementModal}
+		onClose={() => (showNetworkManagementModal = false)}
+		{namespace}
+		{allNetworks}
+		{enabledChainIds}
+		onNetworkToggle={handleNetworkToggle}
+		onNetworkAdd={handleNetworkAdd}
+		onNetworkEdit={handleNetworkEdit}
+		onNetworkRemove={handleNetworkRemove}
+		{allowCustomNetworks}
+	/>
+{/if}
 
 <style>
 	.network-selector {
@@ -215,7 +374,7 @@
 
 	.chain-badge:hover {
 		background: var(--color-muted);
-		border-color: var(--color-border-hover);
+		border-color: var(--color-border-hover, var(--color-border));
 	}
 
 	.chain-badge.active {
@@ -233,31 +392,29 @@
 		transform: rotate(180deg);
 	}
 
-	/* Network dropdown - as a separate fixed layer */
+	/* Network dropdown */
 	.network-dropdown {
 		position: fixed;
-		min-width: 180px;
-		max-width: calc(100vw - 16px); /* Prevent overflow on mobile */
+		min-width: 240px;
+		max-width: calc(100vw - 16px);
 		background: var(--color-background);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-lg);
 		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 		animation: slideDown 200ms ease;
-		z-index: 9999; /* Higher z-index for mobile modals */
+		z-index: 9999;
 		overflow: hidden;
-		-webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-		transform: translateZ(0); /* Force GPU acceleration */
-		will-change: transform, opacity; /* Optimize animations */
+		-webkit-overflow-scrolling: touch;
+		transform: translateZ(0);
+		will-change: transform, opacity;
 	}
 
 	.network-dropdown.dropdown-above {
 		animation: slideUp 200ms ease;
 	}
 
-	/* iOS Safari specific fixes */
 	@supports (-webkit-touch-callout: none) {
 		.network-dropdown {
-			/* Prevent iOS bounce scrolling issues */
 			position: fixed;
 			transform: translate3d(0, 0, 0);
 		}
@@ -287,10 +444,10 @@
 
 	.dropdown-content {
 		padding: var(--space-2);
-		max-height: inherit; /* Inherit from parent which is dynamically set */
+		max-height: 320px;
 		overflow-y: auto;
 		overflow-x: hidden;
-		-webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.network-option {
@@ -331,5 +488,76 @@
 	.check-icon {
 		color: var(--color-primary);
 		flex-shrink: 0;
+	}
+
+	/* 操作按钮区域 */
+	.network-actions {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		padding: var(--space-2);
+		border-top: 1px solid var(--color-panel-border-2);
+		background: var(--color-panel-1);
+	}
+
+	.action-button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-2);
+		width: 100%;
+		padding: var(--space-2-5) var(--space-3);
+		font-size: var(--text-sm);
+		font-weight: var(--font-medium);
+		border-radius: var(--radius);
+		cursor: pointer;
+		transition: all 150ms ease;
+		border: 1px solid;
+		background: transparent;
+	}
+
+	.action-button svg {
+		flex-shrink: 0;
+	}
+
+	.action-button-primary {
+		color: var(--color-foreground);
+		border-color: var(--color-border);
+	}
+
+	.action-button-primary:hover {
+		background: var(--color-muted);
+		border-color: var(--color-border-hover, var(--color-border));
+	}
+
+	.action-button-primary svg {
+		color: var(--color-primary);
+	}
+
+	.action-button-secondary {
+		color: var(--color-muted-foreground);
+		border: 1px dashed var(--color-border);
+		font-size: var(--text-xs);
+	}
+
+	.action-button-secondary:hover {
+		border-style: solid;
+		color: var(--color-primary);
+		background: var(--color-panel-accent);
+	}
+
+	.action-button-secondary svg {
+		color: var(--color-primary);
+	}
+
+	@media (max-width: 640px) {
+		.network-dropdown {
+			min-width: calc(100vw - 32px);
+		}
+
+		.action-button {
+			font-size: var(--text-xs);
+			padding: var(--space-2) var(--space-2-5);
+		}
 	}
 </style>

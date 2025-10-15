@@ -369,7 +369,11 @@
 					<div class="network-siwe-row">
 						<!-- Network selector component with feedback -->
 						<div class="network-selector-wrapper">
-							<NetworkSelector chainId={displayedChainId} onChainSwitch={handleChainSwitch} />
+							<NetworkSelector
+								namespace="account-modal"
+								chainId={displayedChainId}
+								onChainSwitch={handleChainSwitch}
+							/>
 							<ChainSwitchFeedback
 								show={switchFeedback !== null}
 								type={switchFeedback || 'loading'}
