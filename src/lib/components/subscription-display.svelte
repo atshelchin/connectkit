@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { WalletStore } from '../connectors/index.js';
-	import { SubscriptionService } from '../services/subscription-service.js';
-	import { SubscriptionStatus, type SubscriptionInfo } from '../types/subscription.js';
+	import { SubscriptionService } from '$lib/core/services/subscription-service.js';
+	import { SubscriptionStatus, type SubscriptionInfo } from '$lib/types/subscription.js';
 	import type {
 		SubscriptionConfig,
 		SubscriptionNetworkConfig
-	} from '../types/subscription-config.js';
+	} from '$lib/types/subscription-config.js';
 	import type { Address } from 'viem';
 	import { formatEther } from 'viem';
 

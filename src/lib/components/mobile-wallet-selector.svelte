@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getRecommendedMobileWallets, openWalletDeepLink } from '../utils/mobile.js';
+	import { getRecommendedMobileWallets, openWalletDeepLink } from '$lib/utils/mobile.js';
 	import Modal from './modal.svelte';
 
 	interface Props {

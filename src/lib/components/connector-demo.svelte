@@ -13,8 +13,8 @@
 	import WalletConnecting from './wallet-connecting.svelte';
 	import SubscriptionDisplay from './subscription-display.svelte';
 	import { mainnet, polygon, optimism, arbitrum, base } from 'viem/chains';
-	import { fusionistEndurance } from '../config/chains/fusionist-endurance.js';
-	import type { SubscriptionConfig } from '../types/subscription-config.js';
+	import { fusionistEndurance } from '$lib/core/config/chains/fusionist-endurance.js';
+	import type { SubscriptionConfig } from '$lib/types/subscription-config.js';
 
 	// State from the wallet store
 	let store = $state<WalletStore>() as WalletStore;

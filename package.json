@@ -1,6 +1,12 @@
 {
 	"name": "@shelchin/connectkit",
+	"description": "A Svelte5 Wallket connectkit for Ethereum apps",
 	"version": "0.0.1",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/atshelchin/connectkit.git"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
@@ -32,11 +38,21 @@
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
-			"svelte": "./dist/index.js"
+			"default": "./dist/index.js"
+		},
+		"./connectors": {
+			"types": "./dist/connectors/index.d.ts",
+			"default": "./dist/connectors/index.js"
+		},
+		"./components": {
+			"types": "./dist/components/index.d.ts",
+			"svelte": "./dist/components/index.js",
+			"default": "./dist/components/index.js"
 		}
 	},
 	"peerDependencies": {
-		"svelte": "^5.0.0"
+		"svelte": "^5.0.0",
+		"viem": "^2.37.2"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
@@ -69,11 +85,10 @@
 		"svelte"
 	],
 	"dependencies": {
-		"@base-org/account": "^2.1.0",
-		"@lucide/svelte": "^0.542.0",
-		"@walletconnect/ethereum-provider": "^2.21.8",
 		"qr-code-styling": "^1.9.2",
 		"qrcode": "^1.5.4",
-		"viem": "^2.37.2"
+		"@base-org/account": "^2.1.0",
+		"@walletconnect/ethereum-provider": "^2.21.8",
+		"@lucide/svelte": "^0.542.0"
 	}
 }

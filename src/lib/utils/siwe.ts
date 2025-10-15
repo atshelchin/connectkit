@@ -1,5 +1,5 @@
 import type { Address } from 'viem';
-import type { SIWESession } from '../connectors/types.js';
+import type { SIWESession } from '$lib/connectors/types.js';
 
 const SIWE_SESSION_KEY_PREFIX = 'connectkit.siwe.';
 

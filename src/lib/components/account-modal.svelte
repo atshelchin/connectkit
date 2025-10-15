@@ -11,7 +11,7 @@
 		createSIWEMessage,
 		storeSIWESession,
 		clearSIWESession
-	} from '../utils/siwe.js';
+	} from '$lib/utils/siwe.js';
 	import type { SIWESession } from '../connectors/types.js';
 	import AddressDisplay from './address-display.svelte';
 	interface Props {

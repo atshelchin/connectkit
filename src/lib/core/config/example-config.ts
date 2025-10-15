@@ -1,7 +1,7 @@
 import { mainnet, polygon, arbitrum, optimism } from 'viem/chains';
-import type { ConnectKitConfig } from '../types/connectkit-config.js';
-import type { SubscriptionConfig } from '../types/subscription-config.js';
-import { fusionistEndurance } from '../config/chains/fusionist-endurance.js';
+import type { ConnectKitConfig } from '$lib/types/connectkit-config.js';
+import type { SubscriptionConfig } from '$lib/types/subscription-config.js';
+import { fusionistEndurance } from './chains/fusionist-endurance.js';
 
 /**
  * Example subscription configuration

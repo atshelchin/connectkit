@@ -5,14 +5,14 @@ import {
 	type Address,
 	encodeFunctionData
 } from 'viem';
-import type { WalletStore } from '../connectors/index.js';
+import type { WalletStore } from '$lib/connectors/index.js';
 import {
 	SubscriptionStatus,
 	type SubscriptionInfo,
 	type UserSubscription,
 	type SubscriptionPlan
-} from '../types/subscription.js';
-import type { SubscriptionNetworkConfig } from '../types/subscription-config.js';
+} from '$lib/types/subscription.js';
+import type { SubscriptionNetworkConfig } from '$lib/types/subscription-config.js';
 
 interface EthereumProvider {
 	request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { setupI18n } from '../i18n/create-i18n.svelte.js';
-	import { createThemeStore } from '$lib/stores/theme.svelte.js';
+	import { createThemeStore } from '$lib/core/stores/theme.svelte.js';
 	import '../design-tokens.css';
 	import type { LayoutData } from './$types.js';
 

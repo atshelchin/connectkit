@@ -2,7 +2,7 @@ import type { Address, WalletClient } from 'viem';
 import { EthereumProvider } from '@walletconnect/ethereum-provider';
 import { BaseConnector } from './base.js';
 import { ConnectorType, type WalletConnectConnectorOptions } from './types.js';
-import { isMobile, openWalletDeepLink } from '../utils/mobile.js';
+import { isMobile, openWalletDeepLink } from '$lib/utils/mobile.js';
 
 type WalletConnectProvider = InstanceType<typeof EthereumProvider>;
 

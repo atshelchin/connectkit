@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import QRCode from './qr-code.svelte';
 	import WalletIcon from './wallet-icon.svelte';
-	import { isMobile, getRecommendedMobileWallets, openWalletDeepLink } from '../utils/mobile.js';
+	import { isMobile, getRecommendedMobileWallets, openWalletDeepLink } from '$lib/utils/mobile.js';
 
 	interface Props {
 		walletName: string;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Sun, Moon } from '@lucide/svelte';
-	import { useTheme } from '$lib/stores/theme.svelte';
+	import { useTheme } from '$lib/core/stores/theme.svelte';
 
 	interface Props {
 		size?: 'sm' | 'md' | 'lg';

@@ -1,5 +1,5 @@
 import type { Chain } from 'viem';
-import type { ConnectorOptions } from '../connectors/types.js';
+import type { ConnectorOptions } from '$lib/connectors/types.js';
 import type { SubscriptionConfig } from './subscription-config.js';
 
 /**
