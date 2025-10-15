@@ -50,6 +50,7 @@ Production releases are created by pushing a git tag.
 ### Steps to Release
 
 1. **Update version and create tag**
+
    ```bash
    # For patch release (0.0.1 → 0.0.2)
    npm version patch
@@ -70,6 +71,7 @@ Production releases are created by pushing a git tag.
    - 🏷️ Creates a git tag (tag: "v1.0.0")
 
 2. **Push both commit and tag**
+
    ```bash
    git push origin main
    git push origin --tags
@@ -105,10 +107,10 @@ npm install @shelchin/connectkit@1.0.0
 
 ## NPM Tags Explained
 
-| Tag | Description | Auto-updated? |
-|-----|-------------|---------------|
-| `latest` | Stable production release | Yes, on tag push |
-| `dev` | Latest development build | Yes, on main commit |
+| Tag      | Description               | Auto-updated?       |
+| -------- | ------------------------- | ------------------- |
+| `latest` | Stable production release | Yes, on tag push    |
+| `dev`    | Latest development build  | Yes, on main commit |
 
 ## Requirements
 
@@ -125,6 +127,7 @@ You need to configure the following secret in your GitHub repository:
 ### NPM Access
 
 Package must be published as **public** (configured in workflows):
+
 ```bash
 npm publish --access public
 ```
@@ -167,6 +170,7 @@ Example: 0.0.1-dev.20250115120000.abc1234
 ### Version Conflict
 
 If a version already exists on npm:
+
 - Dev releases: GitHub Actions will fail, check logs
 - Production releases: Don't reuse tag names, create a new version
 
@@ -229,6 +233,7 @@ git push origin main --tags
 ## Support
 
 For issues with the release process:
+
 - Check [GitHub Actions](https://github.com/atshelchin/connectkit/actions) logs
 - Review this document
 - Open an issue on GitHub

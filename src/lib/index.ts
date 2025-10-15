@@ -13,4 +13,4 @@
 
 // // Export example configurations
 // export * from './core/config/example-config.js';
-export const testAdd = (a:number, b:number) => a + b
+export const testAdd = (a: number, b: number) => a + b;
