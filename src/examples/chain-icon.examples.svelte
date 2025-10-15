@@ -1,6 +1,6 @@
 <script lang="ts">
-	import ChainIcon from './chain-icon.svelte';
-	import { chainIcons } from './chain-icons.js';
+	import ChainIcon from '../lib/components/chain-icon.svelte';
+	import { chainIcons } from '../lib/components/chain-icons.js';
 
 	// Popular chains for showcase
 	const popularChains = [

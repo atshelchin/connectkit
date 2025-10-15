@@ -6,12 +6,12 @@
 		type Connector,
 		type ConnectionState,
 		type EIP6963ProviderDetail
-	} from '../connectors/index.js';
-	import ConnectedButton from './connected-button.svelte';
-	import AccountModal from './account-modal.svelte';
-	import WalletList from './wallet-list.svelte';
-	import WalletConnecting from './wallet-connecting.svelte';
-	import SubscriptionDisplay from './subscription-display.svelte';
+	} from '../lib/connectors/index.js';
+	import ConnectedButton from '../lib/components/connected-button.svelte';
+	import AccountModal from '../lib/components/account-modal.svelte';
+	import WalletList from '../lib/components/wallet-list.svelte';
+	import WalletConnecting from '../lib/components/wallet-connecting.svelte';
+	import SubscriptionDisplay from '../lib/components/subscription-display.svelte';
 	import { mainnet, polygon, optimism, arbitrum, base } from 'viem/chains';
 	import { fusionistEndurance } from '$lib/core/config/chains/fusionist-endurance.js';
 	import type { SubscriptionConfig } from '$lib/types/subscription-config.js';
@@ -132,7 +132,7 @@
 
 				if (walletDetail) {
 					// Dynamically import and create the connector
-					const { EIP6963Connector } = await import('../connectors/eip6963.js');
+					const { EIP6963Connector } = await import('../lib/connectors/eip6963.js');
 					connector = new EIP6963Connector({
 						providerDetail: walletDetail,
 						chains: [fusionistEndurance, mainnet, polygon, optimism, arbitrum, base]

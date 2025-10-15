@@ -1,5 +1,5 @@
 <script lang="ts">
-	import AddressDisplay from './address-display.svelte';
+	import AddressDisplay from '../lib/components/address-display.svelte';
 
 	// Example addresses
 	const addresses = [

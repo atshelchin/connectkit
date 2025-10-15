@@ -1,8 +1,8 @@
 <script lang="ts">
-	import ConnectedButton from './connected-button.svelte';
-	import AccountModal from './account-modal.svelte';
-	import WalletList from './wallet-list.svelte';
-	import WalletConnecting from './wallet-connecting.svelte';
+	import ConnectedButton from '../lib/components/connected-button.svelte';
+	import AccountModal from '../lib/components/account-modal.svelte';
+	import WalletList from '../lib/components/wallet-list.svelte';
+	import WalletConnecting from '../lib/components/wallet-connecting.svelte';
 
 	// Connection states
 	let isConnected = $state(false);

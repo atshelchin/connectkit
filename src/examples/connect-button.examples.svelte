@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ConnectButton from './connect-button.svelte';
+	import ConnectButton from '../lib/components/connect-button.svelte';
 </script>
 
 <div class="connect-button-examples">

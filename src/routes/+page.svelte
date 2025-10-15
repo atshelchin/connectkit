@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { LangToggle, ThemeToggle } from '$lib/components/index.js';
-	import ModalExamples from '$lib/components/modal.examples.svelte';
-	import AvatarExamples from '$lib/components/avatar.examples.svelte';
-	import AddressDisplayExamples from '$lib/components/address-display.examples.svelte';
-	import EthereumIdentityExamples from '$lib/components/ethereum-identity.examples.svelte';
-	import ChainIconExamples from '$lib/components/chain-icon.examples.svelte';
-	import WalletListExamples from '$lib/components/wallet-list.examples.svelte';
-	import ConnectedButtonExamples from '$lib/components/connected-button.examples.svelte';
-	import ConnectorDemoExamples from '$lib/components/connector-demo.examples.svelte';
+	import ModalExamples from '../examples/modal.examples.svelte';
+	import AvatarExamples from '../examples/avatar.examples.svelte';
+	import AddressDisplayExamples from '../examples/address-display.examples.svelte';
+	import EthereumIdentityExamples from '../examples/ethereum-identity.examples.svelte';
+	import ChainIconExamples from '../examples/chain-icon.examples.svelte';
+	import WalletListExamples from '../examples/wallet-list.examples.svelte';
+	import ConnectedButtonExamples from '../examples/connected-button.examples.svelte';
+	import ConnectorDemoExamples from '../examples/connector-demo.examples.svelte';
 </script>
 
 <div class="container">

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import EthereumIdentity from './ethereum-identity.svelte';
-	import Avatar from './avatar.svelte';
+	import EthereumIdentity from '../lib/components/ethereum-identity.svelte';
+	import Avatar from '../lib/components/avatar.svelte';
 
 	// Example addresses with known ENS names
 	const addresses = [

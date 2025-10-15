@@ -1,7 +1,7 @@
 <script lang="ts">
-	import WalletList from './wallet-list.svelte';
-	import WalletConnecting from './wallet-connecting.svelte';
-	import Modal from './modal.svelte';
+	import WalletList from '../lib/components/wallet-list.svelte';
+	import WalletConnecting from '../lib/components/wallet-connecting.svelte';
+	import Modal from '../lib/components/modal.svelte';
 
 	// State for examples
 	let showModal = $state(false);

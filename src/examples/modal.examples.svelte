@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Modal from './modal.svelte';
+	import Modal from '../lib/components/modal.svelte';
 
 	// Modal states
 	let basicModal = $state(false);

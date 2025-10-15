@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Avatar from './avatar.svelte';
+	import Avatar from '../lib/components/avatar.svelte';
 
 	// Example addresses
 	const exampleAddresses = [
