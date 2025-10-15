@@ -3,7 +3,7 @@
 	const i18n = getI18n();
 
 	const toggleLang = (code: string) => {
-		i18n.setLocale(code);
+		i18n?.setLocale(code);
 	};
 </script>
 
@@ -11,7 +11,7 @@
 <button class="lang" onclick={() => toggleLang('zh')}>中文</button>
 <button class="lang" onclick={() => toggleLang('fr')}>法语</button>
 
-{i18n.locale}
+{i18n?.locale ?? 'en'}
 
 <style>
 	.lang {
