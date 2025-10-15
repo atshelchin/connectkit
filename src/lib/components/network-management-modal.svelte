@@ -36,6 +36,8 @@
 	let editingNetwork = $state<NetworkConfig | null>(null);
 	let validatingNetwork = $state<number | null>(null);
 	let validationMessage = $state('');
+	let showValidationDialog = $state(false);
+	// let pendingToggle = $state<{ chainId: number; enabled: boolean } | null>(null);
 
 	// Checklist modal state
 	let showChecklistModal = $state(false);
@@ -109,6 +111,23 @@
 		showChecklistModal = false;
 		checklistNetwork = null;
 	}
+
+	// // 确认警告对话框
+	// async function confirmValidation() {
+	// 	if (pendingToggle) {
+	// 		await onNetworkToggle(pendingToggle.chainId, pendingToggle.enabled);
+	// 		pendingToggle = null;
+	// 	}
+	// 	showValidationDialog = false;
+	// 	validationMessage = '';
+	// }
+
+	// // 取消警告对话框
+	// function cancelValidation() {
+	// 	pendingToggle = null;
+	// 	showValidationDialog = false;
+	// 	validationMessage = '';
+	// }
 
 	// 验证表单
 	// function validateForm(): boolean {
@@ -434,7 +453,7 @@
 			{/if}
 
 			<!-- 验证消息 -->
-			{#if validationMessage}
+			{#if validationMessage && !showValidationDialog}
 				<div class="validation-message">{validationMessage}</div>
 			{/if}
 

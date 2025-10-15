@@ -9,6 +9,25 @@
 	} from '$lib/stores/network-config.svelte';
 	import type { StoredNetworkConfig } from '$lib/stores/network-config.svelte';
 
+	// 验证结果
+	// interface ValidationResult {
+	// 	valid: boolean;
+	// 	error?: string;
+	// 	warning?: string;
+	// 	canProceed?: boolean;
+	// }
+
+	// 网络验证器类型
+	// type NetworkValidator = (
+	// 	network: NetworkConfig,
+	// 	context: {
+	// 		currentChainId?: number;
+	// 		connectedWallet?: string;
+	// 		existingNetworks: NetworkConfig[];
+	// 		namespace: string;
+	// 	}
+	// ) => Promise<ValidationResult>;
+
 	interface Props {
 		// 必填
 		namespace: string;
@@ -17,6 +36,9 @@
 
 		// 初始化配置（可选）
 		defaultEnabledChainIds?: number[];
+
+		// 验证器
+		// networkValidators?: NetworkValidator[];
 
 		// 功能开关
 		allowRpcEdit?: boolean;
@@ -32,6 +54,7 @@
 		chainId = 1,
 		onChainSwitch,
 		defaultEnabledChainIds,
+		// networkValidators = [],
 		allowRpcEdit = true,
 		allowCustomNetworks = true,
 		allowNetworkManagement = true,
