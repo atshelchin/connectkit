@@ -8,9 +8,13 @@
 	import WalletListExamples from '../examples/wallet-list.examples.svelte';
 	import ConnectedButtonExamples from '../examples/connected-button.examples.svelte';
 	import ConnectorDemoExamples from '../examples/connector-demo.examples.svelte';
+	import { useI18n } from '@shelchin/i18n/svelte';
+	const i18n = useI18n();
 </script>
 
 <div class="container">
+	{i18n.t('welcome')}
+	{i18n.t('connect')}
 	<header>
 		<h1>ConnectKit Components</h1>
 		<div class="header-actions">

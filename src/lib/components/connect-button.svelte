@@ -1,8 +1,9 @@
 <script>
-	import { t } from '$lib/i18n/i18n.js';
+	import { useI18n } from '$lib/i18n/i18n.js';
+	const i18n = useI18n();
 </script>
 
-<button class="connect">{t('connect')}</button>
+<button class="connect">{i18n.t('connect')}</button>
 
 <style>
 	.connect {

@@ -2,11 +2,9 @@
 	interface Props {
 		show: boolean;
 		type: 'loading' | 'error' | 'success';
-		message?: string;
 	}
 
-	let { show = false, type = 'loading', message }: Props = $props();
-	console.log({ message });
+	let { show = false, type = 'loading' }: Props = $props();
 </script>
 
 {#if show}

@@ -85,10 +85,11 @@
 		"svelte"
 	],
 	"dependencies": {
-		"qr-code-styling": "^1.9.2",
-		"qrcode": "^1.5.4",
 		"@base-org/account": "^2.1.0",
+		"@lucide/svelte": "^0.542.0",
+		"@shelchin/i18n": "^0.0.3-dev.20251016115159.4e313f3",
 		"@walletconnect/ethereum-provider": "^2.21.8",
-		"@lucide/svelte": "^0.542.0"
+		"qr-code-styling": "^1.9.2",
+		"qrcode": "^1.5.4"
 	}
 }

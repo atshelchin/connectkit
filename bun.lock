@@ -6,10 +6,10 @@
       "dependencies": {
         "@base-org/account": "^2.1.0",
         "@lucide/svelte": "^0.542.0",
+        "@shelchin/i18n": "^0.0.3-dev.20251016115159.4e313f3",
         "@walletconnect/ethereum-provider": "^2.21.8",
         "qr-code-styling": "^1.9.2",
         "qrcode": "^1.5.4",
-        "viem": "^2.37.2",
       },
       "devDependencies": {
         "@eslint/compat": "^1.2.5",
@@ -40,6 +40,7 @@
       },
       "peerDependencies": {
         "svelte": "^5.0.0",
+        "viem": "^2.37.2",
       },
     },
   },
@@ -297,6 +298,8 @@
     "@scure/bip32": ["@scure/bip32@1.7.0", "", { "dependencies": { "@noble/curves": "~1.9.0", "@noble/hashes": "~1.8.0", "@scure/base": "~1.2.5" } }, "sha512-E4FFX/N3f4B80AKWp5dP6ow+flD1LQZo/w8UnLGYZO674jS6YnYeepycOOksv+vLPSpgN35wgKgy+ybfTb2SMw=="],
 
     "@scure/bip39": ["@scure/bip39@1.6.0", "", { "dependencies": { "@noble/hashes": "~1.8.0", "@scure/base": "~1.2.5" } }, "sha512-+lF0BbLiJNwVlev4eKelw1WWLaiKXw7sSl8T6FvBlWkdX+94aGJ4o8XjUdlyhTCjd8c+B3KT3JfS8P0bLRNU6A=="],
+
+    "@shelchin/i18n": ["@shelchin/i18n@0.0.3-dev.20251016115159.4e313f3", "", { "peerDependencies": { "svelte": "^5.0.0" } }, "sha512-6b3uYV9p21/KVY40Fco9OuWBN88hEI0gGN0LLxG5ZpaJwoQT5WxoXe8qKLvBDv8iX/8rIkad+olMqf4uog5tdw=="],
 
     "@sindresorhus/is": ["@sindresorhus/is@7.0.2", "", {}, "sha512-d9xRovfKNz1SKieM0qJdO+PQonjnnIfSNWfHYnBSJ9hkjm0ZPw6HlxscDXYstp3z+7V2GOFHc+J0CYrYTjqCJw=="],
 

@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { getI18n } from '$lib/i18n/i18n.js';
-	const i18n = getI18n();
+	import { useI18n } from '$lib/i18n/i18n.js';
+	const i18n = useI18n();
 
 	const toggleLang = (code: string) => {
-		i18n?.setLocale(code);
+		i18n.setLocale(code);
 	};
 </script>
 
@@ -12,6 +12,10 @@
 <button class="lang" onclick={() => toggleLang('fr')}>法语</button>
 
 {i18n?.locale ?? 'en'}
+
+{i18n.t('welcome')}
+{i18n.t('abc')}
+{i18n.t('connect')}
 
 <style>
 	.lang {
