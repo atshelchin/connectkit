@@ -30,7 +30,7 @@ export function extractLocaleFromPathname(pathname: string): string | null {
 }
 
 export function extractLocaleFromCookie(cookies: Cookies): string | null {
-	const field = cookies.get('locale') || '';
+	const field = cookies.get('i18n-locale') || '';
 	if (isValidLanguageCode(field)) {
 		return field;
 	}
